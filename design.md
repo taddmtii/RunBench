@@ -1,6 +1,6 @@
 ## References
 
-- Spaced repetition algorithm: https://github.com/thyagoluciano/sm2
+- Spaced repetition algorithm (SM2): https://github.com/thyagoluciano/sm2
 
 ## Tech Stack
 
@@ -12,7 +12,7 @@
 
 ## Core Requirements
 
-- Execute code in a sandboxed environment (Monaco Editor as frontend component)
+- Execute code in a sandboxed environment (Monaco Editor as the frontend component)
 - Analyze time complexity of submitted solutions
 - Capture time-to-solve and total problems solved, and persist both
 - Implement the SM2 algorithm for spaced repetition suggestions
@@ -31,6 +31,7 @@
 
 - Runs on every submission, recomputed only when a problem is solved
 - Each problem's review schedule is independent of others
+- `accepted` status on a `Submission` maps to an SM2 quality score, which drives updates to `easeFactor`, `interval`, and `repetitions`
 
 ### Time Complexity Analysis
 
@@ -43,109 +44,135 @@
 - Memory limits
 - Filesystem restrictions
 
+---
+
 ## Initial Architecture
 
-```
-src/app
-├── api/
-│   ├── auth/
-│   │   └── route.ts
-│   ├── problems/
-│   │   └── route.ts          # GET — all problems for the user
-│   ├── submissions/
-│   │   └── route.ts          # GET, PATCH, POST (notes)
-│   ├── run/
-│   │   └── route.ts          # POST — spins up sandbox, runs code against test cases
-│   ├── preferences/
-│   │   └── route.ts          # GET, PATCH
-│   └── user/
-│       └── route.ts          # GET, PATCH — current user/profile info
-├── problems/
-│   ├── page.tsx               # all available problems
-│   └── [problemId]/
-│       └── page.tsx           # specific problem view
-├── signup/
-│   └── page.tsx
-├── login/
-│   └── page.tsx                # routes to /problems on success
-├── history/
-│   └── page.tsx                # weak areas, daily suggestions, stats
-└── page.tsx                    # Home
-```
+    src/app
+    ├── api/
+    │   ├── auth/
+    │   │   ├── login/
+    │   │   │   └── route.ts               # POST — verify credentials, issue JWT
+    │   │   ├── signup/
+    │   │   │   └── route.ts               # POST — create new user
+    │   │   ├── logout/
+    │   │   │   └── route.ts               # POST — clear auth cookie
+    │   │   └── refresh/
+    │   │       └── route.ts               # POST — exchange refresh token for new access token
+    │   ├── problems/
+    │   │   └── route.ts                   # GET — all problems for the user
+    │   ├── submissions/
+    │   │   ├── route.ts                   # GET, POST — list submissions / create a new submission
+    │   │   └── [submissionId]/
+    │   │       └── notes/
+    │   │           └── route.ts           # PATCH — update notes on a specific submission
+    │   ├── run/
+    │   │   └── route.ts                   # POST — spins up sandbox, runs code against test cases
+    │   └── user/
+    │       └── route.ts                   # GET, PATCH — current user/profile info
+    ├── problems/
+    │   ├── page.tsx                        # all available problems
+    │   └── [problemId]/
+    │       ├── page.tsx                    # specific problem view
+    │       └── submissions/
+    │           └── page.tsx                # this user's submission history for this problem
+    ├── signup/
+    │   └── page.tsx
+    ├── login/
+    │   └── page.tsx
+    ├── history/
+    │   └── page.tsx
+    └── page.tsx                            # Home
+
+---
 
 ## Database Schema
 
-Users
+### User
 
-- id (uuid()) (PK)
-- firstName (string)
-- lastName (string)
-- email (string) @unique
-- username (string) @unique
-- hashedPassword (string)
-- preferences? (maybe I could store this information in cookies instead of the database?)
-- createdAt
-- updatedAt
+| Field          | Type      | Notes     |
+| -------------- | --------- | --------- |
+| id             | uuid (PK) |           |
+| firstName      | string    |           |
+| lastName       | string    |           |
+| email          | string    | `@unique` |
+| username       | string    | `@unique` |
+| hashedPassword | string    |           |
+| createdAt      | datetime  |           |
+| updatedAt      | datetime  |           |
 
-Problems
+### Problem
 
-- id (uuid())
-- title (string, e.g "Two Sum")
-- description (string, e.g. "Do something with these two numbers and make them dance around.")
-- difficulty (string (maybe a value from an enum like DifficultyLevel (EASY, MEDIUM, HARD, etc.)))
-- reccomendedTimeComplexity (string, e.g. O(1) space O(n) time)
-- solutions (solution[], common solutions associated with a problem. separate from a users solution, these are predefined)
-- createdAt
-- updatedAt
+| Field                     | Type                    | Notes                                       |
+| ------------------------- | ----------------------- | ------------------------------------------- |
+| id                        | uuid (PK)               |                                             |
+| title                     | string                  | e.g. "Two Sum"                              |
+| description               | string                  |                                             |
+| difficulty                | string (enum)           | `DifficultyLevel`: `EASY`, `MEDIUM`, `HARD` |
+| recommendedTimeComplexity | string                  | e.g. "O(1) space, O(n) time"                |
+| solutions                 | relation → `Solution[]` |                                             |
+| createdAt                 | datetime                |                                             |
+| updatedAt                 | datetime                |                                             |
 
-Solutions
+### Solution
 
-- id (PK)
-- problemId (FK, whcih problem does this solution belong to?)
-- name (string)
-- description (string)
-- timeComplexity (string)
-- language (string)
-- rawCode (string)
-- runtime (string)
-- optimal (boolean)
-- createdAt
-- updatedAt
+_(predefined reference solutions, separate from user submissions)_
 
-Submissions
+| Field          | Type                    | Notes |
+| -------------- | ----------------------- | ----- |
+| id (PK)        |                         |       |
+| problemId      | FK → Problem            |       |
+| name           | string                  |       |
+| description    | string                  |       |
+| timeComplexity | string                  |       |
+| language       | string (enum candidate) |       |
+| rawCode        | string                  |       |
+| runtime        | integer                 |       |
+| optimal        | boolean                 |       |
+| createdAt      | datetime                |       |
+| updatedAt      | datetime                |       |
 
-- id (PK)
-- userId (FK) (string, which submission does this user belong to?)
-- problemId (FK) (string, which problem does this submission belong to?)
-- rawCode (string)
-- language (string)
-- runtime (string)
-- proposedOptimal (string, AI can make a judgement here)
-- proposedtTimeComplexity (string, AI can also make a judgment here)
-- notes (string) (from Notes.content)
-- accepted (boolean, dictates if a submission is accepted or not and triggers other things.)
-- createdAt
-- updatedAt
+### Submission
 
-ReviewSchedule
+| Field                  | Type         | Notes                        |
+| ---------------------- | ------------ | ---------------------------- |
+| id (PK)                |              |                              |
+| userId                 | FK → User    |                              |
+| problemId              | FK → Problem |                              |
+| rawCode                | string       |                              |
+| language               | string       |                              |
+| runtime                | integer      |                              |
+| proposedOptimal        | boolean      | AI judgment                  |
+| proposedTimeComplexity | string       | AI judgment                  |
+| notes                  | string       | user's notes on this attempt |
+| accepted               | boolean      | drives SM2 + history stats   |
+| createdAt              | datetime     |                              |
+| updatedAt              | datetime     |                              |
 
-- id (PK)
-- userId (FK)
-- problemId (FK)
-- easeFactor (float) - how easy this item is for the user. starts at 2.5. Goes up when you do well and goes down when you do poorly.
-- interval (int, days until next review) - how many days should you wait before showing it again.
-- repetitions (int) - how many times in a row you have recalled it successfully. resets to 0 once you fail.
-- nextReviewAt (datetime)
-- lastReviewedAt (datetime)
-- @@unique([userId, problemId])
-- createdAt
-- updatedAt
+### ReviewSchedule
 
-TestCase
+_(SM2 state — one row per user+problem)_
 
-- id (PK)
-- problemId (FK)
-- input (string, what are we putting into the submission)
-- expectedOutput (string)
-- createdAt
-- updatedAt
+| Field          | Type         | Notes                                                                                 |
+| -------------- | ------------ | ------------------------------------------------------------------------------------- |
+| id (PK)        |              |                                                                                       |
+| userId         | FK → User    |                                                                                       |
+| problemId      | FK → Problem |                                                                                       |
+| easeFactor     | float        | how easy this item is for the user; starts at 2.5; rises on success, falls on failure |
+| interval       | int          | days to wait before showing this problem again                                        |
+| repetitions    | int          | consecutive successful recalls; resets to 0 on failure                                |
+| nextReviewAt   | datetime     |                                                                                       |
+| lastReviewedAt | datetime     |                                                                                       |
+| createdAt      | datetime     |                                                                                       |
+| updatedAt      | datetime     |                                                                                       |
+
+### TestCase
+
+| Field          | Type         | Notes |
+| -------------- | ------------ | ----- |
+| id (PK)        |              |       |
+| problemId      | FK → Problem |       |
+| input          | JSON         |       |
+| expectedOutput | string       |       |
+| createdAt      | datetime     |       |
+| updatedAt      | datetime     |       |
