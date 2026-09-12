@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { Prisma } from "../../../../../generated/prisma/client";
+import { attachAuthCookies } from "@/lib/auth";
 
 interface SignUpUser {
   firstName: string;
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
   }
   const hashedPassword = await bcrypt.hash(body.password, 10);
   try {
-    const res = await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         firstName: body.firstName.trim(),
         lastName: body.lastName.trim(),
@@ -38,7 +39,9 @@ export async function POST(request: NextRequest) {
         hashedPassword: hashedPassword.trim(),
       },
     });
-    return NextResponse.json(res);
+    const { hashedPassword: _, ...userWithoutPassword } = user;
+    const response = NextResponse.json(userWithoutPassword);
+    return attachAuthCookies(response, user);
   } catch (e) {
     if (
       e instanceof Prisma.PrismaClientKnownRequestError &&
