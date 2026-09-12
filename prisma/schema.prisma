@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum Language {
+  PYTHON
+  JAVASCRIPT
+  TYPESCRIPT
+}
+
+model User {
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  email           String   @unique
+  username        String   @unique
+  hashedPassword  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  submissions     Submission[]
+  reviewSchedules ReviewSchedule[]
+
+  @@map("users")
+}
+
+model Problem {
+  id                         String          @id @default(uuid())
+  title                      String
+  description                String
+  difficulty                 Difficulty
+  recommendedTimeComplexity  String
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+  solutions                  Solution[]
+  submissions                Submission[]
+  reviewSchedules            ReviewSchedule[]
+  testCases                  TestCase[]
+
+  @@map("problems")
+}
+
+model Solution {
+  id              String   @id @default(uuid())
+  problemId       String
+  name            String
+  description     String
+  timeComplexity  String
+  language        Language
+  rawCode         String
+  runtime         Int
+  optimal         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@map("solutions")
+}
+
+model Submission {
+  id                      String   @id @default(uuid())
+  userId                  String
+  problemId               String
+  rawCode                 String
+  language                Language
+  runtime                 Int
+  proposedOptimal         Boolean?
+  proposedTimeComplexity  String?
+  notes                   String?
+  accepted                Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([problemId])
+  @@map("submissions")
+}
+
+model ReviewSchedule {
+  id              String   @id @default(uuid())
+  userId          String
+  problemId       String
+  easeFactor      Float    @default(2.5)
+  interval        Int      @default(0)
+  repetitions     Int      @default(0)
+  nextReviewAt    DateTime @default(now())
+  lastReviewedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId])
+  @@map("review_schedules")
+}
+
+model TestCase {
+  id              String   @id @default(uuid())
+  problemId       String
+  input           Json
+  expectedOutput  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@map("test_cases")
+}
