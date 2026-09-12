@@ -1,3 +1,5 @@
+# RunBench
+
 ## References
 
 - Spaced repetition algorithm (SM2): https://github.com/thyagoluciano/sm2
