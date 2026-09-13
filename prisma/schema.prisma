@@ -44,7 +44,9 @@ model Problem {
   title                      String
   description                String
   difficulty                 Difficulty
-  recommendedTimeComplexity  String
+  topic                      String          @default("")
+  recommendedTimeComplexity  String          @default("")
+  recommendedSpaceComplexity String          @default("")
   createdAt                  DateTime        @default(now())
   updatedAt                  DateTime        @updatedAt
   solutions                  Solution[]
