@@ -3,14 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
 
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.includes(pathname) || pathname === "/";
-}
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isApiRoute = pathname.startsWith("/api/");
-  const isPublic = isPublicPath(pathname);
+  const isPublic = PUBLIC_PATHS.includes(pathname) || pathname === "/";
   const accessToken = request.cookies.get("accessToken")?.value;
 
   let isAuthenticated = false;
@@ -18,7 +14,9 @@ export function middleware(request: NextRequest) {
     try {
       verifyAccessToken(accessToken);
       isAuthenticated = true;
-    } catch {
+    } catch (e) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    } finally {
       isAuthenticated = false;
     }
   }
