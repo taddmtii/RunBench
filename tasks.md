@@ -3,13 +3,13 @@
    [X] Create Prisma Schema
    [X] Setup infrastructure (supabase integration)
    [X] Load database with sample problems and test cases
-   [] Setup JWT Authentication (login, logout, signup, refresh routes and cookie handling)
-   [] Initialize shadcn/ui
-   [] Install Monaco Editor for React
-   [] Pick AI provider for time complexity analysis and integrate into project (get API key)
+   [X] Setup JWT Authentication (login, logout, signup, refresh routes and cookie handling)
+   [X] Initialize shadcn/ui
+   [X] Install Monaco Editor for React
+   [X] Pick AI provider for time complexity analysis and integrate into project (get API key)
 2. Frontend
-   [] Wireframe + build Login/Signup pages
-   [] Wireframe + build Home page
+   [X] Wireframe + build Login/Signup pages
+   [X] Wireframe + build Home page
    [] Wireframe + build Problems list page
    [] Wireframe + build Problem detail page (editor + problem description)
    [] Wire Monaco editor into Problem detail page
