@@ -44,6 +44,7 @@ model Problem {
   title                      String
   description                String
   difficulty                 Difficulty
+  topic                      String          @default("")
   recommendedTimeComplexity  String          @default("")
   recommendedSpaceComplexity String          @default("")
   createdAt                  DateTime        @default(now())
