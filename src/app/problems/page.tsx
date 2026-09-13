@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { Problem } from "../../../generated/prisma/client";
 import { useProblems } from "../hooks/useProblems";
 
 export default function Problems() {
@@ -32,7 +31,7 @@ export default function Problems() {
           {data?.map((problem) => (
             <Link
               key={problem.id}
-              href={`/problems/${problem.title}`}
+              href={`/problems/${problem.id}`}
               className="grid grid-cols-[1fr_120px_140px] items-center border-b border-border px-5 py-5 transition hover:bg-muted"
             >
               <span className="text-sm font-medium">{problem.title}</span>
