@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { useProblems } from "../hooks/useProblems"
 
 interface Problem {
   id: String,
@@ -13,9 +14,7 @@ interface Problem {
 
 export default function Problems() {
 
-  useEffect(() => {
-    
-  }, [])
+  const { data } = useProblems();
   return (
     <></>
   )
