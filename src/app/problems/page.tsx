@@ -1,21 +1,18 @@
 "use client"
 
-import { useEffect } from "react"
+import { Problem } from "../../../generated/prisma/client";
 import { useProblems } from "../hooks/useProblems"
-
-interface Problem {
-  id: String,
-  title: String,
-  description: String
-  difficulty: "EASY" | "MEDIUM" | "HARD",
-  recommendedTimeComplexity: String,
-  submissionCount: number
-}
 
 export default function Problems() {
 
-  const { data } = useProblems();
+  const { data, isLoading, error } = useProblems();
   return (
-    <></>
+    <div>
+      {data?.map((problem: Problem) => (
+        <></>
+      )
+
+      )}
+    </div>
   )
 }
