@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Play, Shield, Zap, Target, Layers } from "lucide-react";
+import Card from "@/components/Card";
+import StepCard from "@/components/StepCard";
 
 export default function Home() {
   return (
@@ -111,46 +113,3 @@ export default function Home() {
   );
 }
 
-function Card({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-background p-6 transition-colors hover:bg-accent">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-border">
-        {icon}
-      </div>
-      <h3 className="font-semibold">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        {description}
-      </p>
-    </div>
-  );
-}
-
-function StepCard({
-  number,
-  title,
-  description,
-}: {
-  number: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex flex-col items-center text-center">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-border text-lg font-bold text-muted-foreground">
-        {number}
-      </div>
-      <h3 className="font-semibold">{title}</h3>
-      <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
-        {description}
-      </p>
-    </div>
-  );
-}
