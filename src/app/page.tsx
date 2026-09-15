@@ -7,15 +7,19 @@ import StepCard from "@/components/StepCard";
 import { useAuth } from "./contexts/authContext";
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  console.log("Hit home page, user is: ", user)
+  const { user, isLoading } = useAuth();
+
+
   return (
     <div className="flex flex-col min-h-full">
       <nav className="container mx-auto flex items-center justify-between py-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
           <span className="text-foreground">RunBench</span>
         </Link>
-        <div className="flex items-center gap-4">
+      {user && !isLoading ? (
+        <div className="font-bold">Hello, {user?.firstName}!</div>
+      ) : (
+         <div className="flex items-center gap-4">
           <Link
             href="/login"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -29,8 +33,10 @@ export default function Home() {
             Get Started
           </Link>
         </div>
+      )}
+      
       </nav>
-
+      
       <section className="container mx-auto flex flex-col items-center px-6 pt-16 pb-20 text-center md:pt-24 md:pb-28">
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
           Master coding through

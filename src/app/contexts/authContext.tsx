@@ -5,36 +5,37 @@ import { User } from "../../../generated/prisma/client"
 
 interface AuthContextType {
     user: User | null;
-    loading: boolean;
+    isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
-    const [loading, setLoading] = useState(true)
+    const [isLoading, setIsLoading] = useState(true)
 
     // validate user on mount
     useEffect(() => {
         const getUser = async () => {
             try {
                 const res = await fetch('/api/auth/me')
-                const data = await res.json();
                 if (!res.ok) {
-                    console.error("Could not fetch user")
+                    setUser(null)
+                    setIsLoading(false)
                     return 
                 }
+                const data = await res.json();
                 setUser(data)
             } catch (e) {
                 console.error("Session validation error: ", e)
             } finally {
-                setLoading(false)
+                setIsLoading(false)
             }
         }
         getUser();
     }, [])
 
-    return <AuthContext.Provider value={{user, loading}}>{children}</AuthContext.Provider>
+    return <AuthContext.Provider value={{user, isLoading}}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

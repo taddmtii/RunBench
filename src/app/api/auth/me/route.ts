@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!accessToken) {
       return NextResponse.json(
         { message: "accessToken not found" },
-        { status: 404 },
+        { status: 403 },
       );
     }
     // verify access token, then get user from userid
