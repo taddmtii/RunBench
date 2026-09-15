@@ -4,9 +4,7 @@ import bcrypt from "bcrypt";
 import { attachAuthCookies } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const username = body.username;
-  const password = body.password;
+  const { username, password } = await request.json();
 
   // Check if username and password match what is in db.
   const user = await prisma.user.findUnique({ where: { username } });

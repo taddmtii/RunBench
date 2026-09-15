@@ -1,9 +1,14 @@
+"use client"
+
 import Link from "next/link";
 import { ArrowRight, Play, Shield, Zap, Target, Layers } from "lucide-react";
 import Card from "@/components/Card";
 import StepCard from "@/components/StepCard";
+import { useAuth } from "./contexts/authContext";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  console.log("Hit home page, user is: ", user)
   return (
     <div className="flex flex-col min-h-full">
       <nav className="container mx-auto flex items-center justify-between py-4">
