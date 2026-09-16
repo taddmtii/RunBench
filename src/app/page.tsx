@@ -6,10 +6,18 @@ import Card from "@/components/Card";
 import StepCard from "@/components/StepCard";
 import { useAuth } from "./contexts/authContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { user, isLoading } = useAuth();
-
+  const router = useRouter();
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST"
+    })
+    router.refresh();
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -19,10 +27,14 @@ export default function Home() {
         </Link>
 
         {isLoading && (
-          <Skeleton className="h-4 w-10 rounded-full" />
+          <Skeleton className="h-4 w-[120px] rounded-full" />
         )}
         {!isLoading && user && (
-          <div className="font-bold">Welcome back, {user?.firstName}!</div>
+          <div className="flex items-center gao-4">
+             <div className="font-bold">Welcome back, {user?.firstName}!</div>
+             <Button variant="destructive" className="cursor-pointer" onClick={() => handleLogout()}>Logout</Button>
+          </div>
+         
         )}
         {!isLoading && !user && (
           <div className="flex items-center gap-4">
