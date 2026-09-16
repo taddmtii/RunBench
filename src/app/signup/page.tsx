@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Mail, User, Lock, AlertCircle } from "lucide-react";
+import { useAuth } from "../contexts/authContext";
 
 interface FormData {
   firstName: string;
@@ -37,6 +38,7 @@ export default function Signup() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+  const { setUser } = useAuth();
 
   const validateField = (name: keyof FormData, value: string): string | undefined => {
     switch (name) {
@@ -128,6 +130,8 @@ export default function Signup() {
         throw new Error(data.error || "Signup failed");
       }
 
+      setUser(data)
+
       router.push("/");
       router.refresh();
     } catch (err) {
@@ -141,7 +145,7 @@ export default function Signup() {
     "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-colors";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl mb-6">
@@ -153,7 +157,7 @@ export default function Signup() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-xl border border-border p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             {serverError && (
               <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
