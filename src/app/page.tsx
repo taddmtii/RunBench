@@ -5,6 +5,7 @@ import { ArrowRight, Play, Shield, Zap, Target, Layers } from "lucide-react";
 import Card from "@/components/Card";
 import StepCard from "@/components/StepCard";
 import { useAuth } from "./contexts/authContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -16,10 +17,15 @@ export default function Home() {
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
           <span className="text-foreground">RunBench</span>
         </Link>
-      {user && !isLoading ? (
-        <div className="font-bold">Hello, {user?.firstName}!</div>
-      ) : (
-         <div className="flex items-center gap-4">
+
+        {isLoading && (
+          <Skeleton className="h-4 w-10 rounded-full" />
+        )}
+        {!isLoading && user && (
+          <div className="font-bold">Welcome back, {user?.firstName}!</div>
+        )}
+        {!isLoading && !user && (
+          <div className="flex items-center gap-4">
           <Link
             href="/login"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -33,7 +39,7 @@ export default function Home() {
             Get Started
           </Link>
         </div>
-      )}
+        )}
       
       </nav>
       
