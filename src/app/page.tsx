@@ -10,14 +10,8 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const { user, isLoading } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST"
-    })
-    router.refresh();
-  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -32,7 +26,7 @@ export default function Home() {
         {!isLoading && user && (
           <div className="flex items-center gao-4">
              <div className="font-bold">Welcome back, {user?.firstName}!</div>
-             <Button variant="destructive" className="cursor-pointer" onClick={() => handleLogout()}>Logout</Button>
+             <Button variant="destructive" className="cursor-pointer" onClick={logout}>Logout</Button>
           </div>
          
         )}

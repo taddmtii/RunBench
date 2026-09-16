@@ -26,6 +26,7 @@ export default function Login() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+  const { setUser } = useAuth();
 
   const validateField = (name: keyof FormData, value: string): string | undefined => {
     switch (name) {
@@ -91,6 +92,7 @@ export default function Login() {
       if (!response.ok) {
         throw new Error(data.error || "Login failed");
       }
+      setUser(data)
 
       router.push("/");
       router.refresh();

@@ -1,10 +1,12 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import { User } from "../../../generated/prisma/client"
 
 interface AuthContextType {
     user: User | null;
+    logout: () => Promise<void>;
+    setUser: Dispatch<SetStateAction<User | null>>;
     isLoading: boolean;
 }
 
@@ -13,6 +15,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+
+    const logout = async () => {
+        await fetch("/api/auth/logout", {
+        method: "POST"
+        })
+        setUser(null)
+        setIsLoading(false)
+     }
 
     // validate user on mount
     useEffect(() => {
@@ -35,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         getUser();
     }, [])
 
-    return <AuthContext.Provider value={{user, isLoading}}>{children}</AuthContext.Provider>
+    return <AuthContext.Provider value={{user, logout, setUser, isLoading}}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
