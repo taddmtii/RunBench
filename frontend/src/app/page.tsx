@@ -4,51 +4,12 @@ import Link from "next/link";
 import { ArrowRight, Play, Shield, Zap, Target, Layers } from "lucide-react";
 import Card from "@/components/Card";
 import StepCard from "@/components/StepCard";
-import { useAuth } from "./contexts/authContext";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import Navbar from "@/components/Navbar";
 
 export default function Home() {
-  const { user, logout, isLoading } = useAuth();
-  const router = useRouter();
-
   return (
     <div className="flex flex-col min-h-full">
-      <nav className="container mx-auto flex items-center justify-between py-4">
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <span className="text-foreground">RunBench</span>
-        </Link>
-
-        {isLoading && (
-          <Skeleton className="h-4 w-[120px] rounded-full" />
-        )}
-        {!isLoading && user && (
-          <div className="flex items-center gao-4">
-             <div className="font-bold">Welcome back, {user?.firstName}!</div>
-             <Button variant="destructive" className="cursor-pointer" onClick={logout}>Logout</Button>
-          </div>
-         
-        )}
-        {!isLoading && !user && (
-          <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Login
-          </Link>
-          <Link
-            href="/signup"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            Get Started
-          </Link>
-        </div>
-        )}
-      
-      </nav>
-      
+      <Navbar />
       <section className="container mx-auto flex flex-col items-center px-6 pt-16 pb-20 text-center md:pt-24 md:pb-28">
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
           Master coding through
