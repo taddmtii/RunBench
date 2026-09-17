@@ -3,13 +3,25 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useProblems } from "../hooks/useProblems";
+import Navbar from "@/components/Navbar";
+import { useState } from "react";
 
 export default function Problems() {
   const { data } = useProblems();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSearchQuery(e.target.value)
+  }
+
+  const filtered = data?.filter((problem) => {
+    return problem.title.toLowerCase().includes(searchQuery.toLowerCase())
+  })
 
   return (
-    <main className="min-h-screen bg-background px-6 py-8 text-foreground sm:px-10">
+    <div className="min-h-screen bg-background px-6 text-foreground sm:px-10">
       <div className="mx-auto max-w-5xl">
+        <Navbar />
         <section className="mt-16">
           <h1 className="text-4xl font-semibold">Problems</h1>
           <div className="mt-8 flex max-w-md items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
@@ -17,6 +29,8 @@ export default function Problems() {
             <input
               type="search"
               placeholder="Search problems"
+              value={searchQuery}
+              onChange={handleSearchChange}
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
@@ -28,7 +42,7 @@ export default function Problems() {
             <span>Difficulty</span>
             <span>Topic</span>
           </div>
-          {data?.map((problem) => (
+          {filtered?.map((problem) => (
             <Link
               key={problem.id}
               href={`/problems/${problem.id}`}
@@ -43,6 +57,6 @@ export default function Problems() {
           ))}
         </section>
       </div>
-    </main>
+    </div>
   );
 }
