@@ -39,6 +39,21 @@ model User {
   @@map("users")
 }
 
+model ProblemExample {
+  id String @id @default(uuid())
+  problemId String
+  input String
+  output String
+  explanation String?
+  order Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  @@index([problemId])
+  @@map("problem_examples")
+}
+
 model Problem {
   id                         String          @id @default(uuid())
   title                      String
@@ -49,6 +64,7 @@ model Problem {
   recommendedSpaceComplexity String          @default("")
   createdAt                  DateTime        @default(now())
   updatedAt                  DateTime        @updatedAt
+  examples                   ProblemExample[]
   solutions                  Solution[]
   submissions                Submission[]
   reviewSchedules            ReviewSchedule[]
