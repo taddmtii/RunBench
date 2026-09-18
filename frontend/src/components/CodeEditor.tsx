@@ -6,7 +6,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Button } from "../components/ui/button";
 
 export default function CodeEditor() {
-    const editorRef = useRef(null)
     const [language, setLanguage] = useState("python")
     const [code, setCode] = useState("")
     
