@@ -1,12 +1,12 @@
 import { verifyAccessToken } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup"];
+const PUBLIC_PATHS = ["/", "/login", "/signup"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isApiRoute = pathname.startsWith("/api/");
-  const isPublic = PUBLIC_PATHS.includes(pathname) || pathname === "/";
+  const isPublic = PUBLIC_PATHS.includes(pathname);
   const accessToken = request.cookies.get("accessToken")?.value;
 
   let isAuthenticated = false;
@@ -16,11 +16,10 @@ export function middleware(request: NextRequest) {
       isAuthenticated = true;
     } catch (e) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    } finally {
-      isAuthenticated = false;
     }
   }
 
+  // If it is a protected route and you are not authenticated...
   if (!isPublic && !isAuthenticated) {
     if (isApiRoute) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

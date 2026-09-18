@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react"
 import type { Problem } from "../../../../generated/prisma/client";
+import CodeEditor from "@/components/CodeEditor";
 
 export default function Problem() {
     const [problem, setProblem] = useState<Problem | null>(null);
@@ -34,7 +35,7 @@ export default function Problem() {
     }, [problemId])
     return (
         <>
-        {problem?.title}
+        <CodeEditor />
         </>
     )
 }
