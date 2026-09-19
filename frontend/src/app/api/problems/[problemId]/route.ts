@@ -9,7 +9,7 @@ export async function GET(
 
   const problem = await prisma.problem.findUnique({
     where: { id: problemId },
-    include: { examples: { orderBy: { order: "asc" } } },
+    include: { examples: { orderBy: { order: "asc" } }, testCases: {} },
   });
 
   if (!problem) {
