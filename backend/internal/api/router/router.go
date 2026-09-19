@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 
-	"../handler"
+	"backend/internal/api/handler"
 )
 
 // Sets up HTTP routes (look into chi, gin)
@@ -11,5 +11,5 @@ import (
 
 func Router(svc *service.ExecutionService) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /execute", handler.ExecuteCode(svc))
+	mux.HandleFunc("POST /execute", handler.Run(svc))
 }
