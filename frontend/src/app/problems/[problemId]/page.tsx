@@ -62,6 +62,31 @@ export default function Problem() {
           {problem?.description}
         </p>
 
+        {problem?.examples && (
+            <div className="mt-6 space-y-4">
+                {problem.examples.map((example, i) => (
+                <div key={example.id} className="rounded-md border border-gray-200 p-4 text-sm">
+                    <p className="mb-2 font-medium">Example {i + 1}</p>
+                    <p className="font-mono">
+                    <span className="text-gray-500">Input: </span>
+                    {example.input}
+                    </p>
+                    <p className="font-mono">
+                    <span className="text-gray-500">Output: </span>
+                    {example.output}
+                    </p>
+                    {example.explanation && (
+                    <p className="mt-1 text-gray-600">
+                        <span className="text-gray-500">Explanation: </span>
+                        {example.explanation}
+                    </p>
+                    )}
+                </div>
+                ))}
+            </div>
+        )}
+
+
         <div className="mt-8 grid grid-cols-2 gap-4 border-t border-gray-200 pt-4 text-sm">
           <div>
             <span className="block">Reccomended Time complexity</span>
