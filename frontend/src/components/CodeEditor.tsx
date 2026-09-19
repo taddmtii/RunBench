@@ -31,6 +31,10 @@ export default function CodeEditor() {
         // const data = await res.json();
     }
 
+    const handleSubmitClick = async () => {
+
+    }
+
     return (
         <div className="flex flex-col items-center justify-between gap-2 p-4">
             <div className="flex">
@@ -55,7 +59,7 @@ export default function CodeEditor() {
                     </DropdownMenuContent>
                 </DropdownMenu>
                 <Button className="cursor-pointer" onClick={handleRunClick}>Run</Button>
-                <Button className="bg-green-400 cursor-pointer">Submit</Button>
+                <Button className="bg-green-400 cursor-pointer" onClick={handleSubmitClick}>Submit</Button>
             </div>
             <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-700 bg-gray-900">
                 <Editor 
