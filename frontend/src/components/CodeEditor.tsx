@@ -27,8 +27,8 @@ export default function CodeEditor() {
             console.error("Something went wrong with Run.")
             return
         } 
-        console.log("Run hit successfully")
-        // const data = await res.json();
+        const data = await res.json();
+        console.log(data)
     }
 
     const handleSubmitClick = async () => {

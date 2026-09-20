@@ -11,6 +11,13 @@ export async function POST(request: NextRequest) {
   }
   // Send code to Go service. This only needs to execute code in the sandboxed execution environment and not
   // run any test cases. This route just acts as a proxy to send traffic to the microservice.
-  // const res = fetch()
-  return NextResponse.json({ message: "Sucesss" }, { status: 200 });
+  const res = await fetch("http://localhost:8080/run", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code: code }),
+  });
+  const data = await res.json();
+  return NextResponse.json(data);
 }
