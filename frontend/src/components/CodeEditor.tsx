@@ -21,7 +21,7 @@ export default function CodeEditor() {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({code: code})
+        body: JSON.stringify({code: code, language: language})
         })
         if (!res.ok) {
             console.error("Something went wrong with Run.")

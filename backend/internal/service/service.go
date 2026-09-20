@@ -19,6 +19,8 @@ type Result struct {
 	TimedOut bool
 }
 
+type FileExtensions struct
+
 // Exists jsut so we can put methods on it like RunPython
 type ExecutionService struct{}
 
@@ -28,7 +30,15 @@ func NewExecutionService() *ExecutionService {
 }
 
 // Prepares files and directory, and then calls runContainer with the code.
-func (s *ExecutionService) RunPython(code string) (Result, error) {
+func (s *ExecutionService) Run(code string, language string) (Result, error) {
+	fileExtensions := map[string]string {
+		"python" : ".py",
+		"typescript": ".ts",
+		"javascript": ".js",
+		"csharp": ".cs"
+		"cpp": ".cpp"
+	}
+
 	// Create new folder in the OS temp location. * is replaced by a random number.
 	dir, err := os.MkdirTemp("", "sandbox-*")
 	if err != nil {
@@ -47,15 +57,18 @@ func (s *ExecutionService) RunPython(code string) (Result, error) {
 	// Creates script.py inside temp folder we created
 	// with updated permissions. 0o644 means everyone can ready the file.
 	// Only we can write to it.
-	err = os.WriteFile(filepath.Join(dir, "script.py"), []byte(code), 0o644)
+	extension := fileExtensions[language]
+	err = os.WriteFile(filepath.Join(dir, "code" + extension), []byte(code), 0o644)
 	if err != nil {
 		return Result{}, err
 	}
+
+
 	return s.runContainer(dir)
 }
 
 // Runs a container against a directory containing the file with code.
-func (s *ExecutionService) runContainer(dir string) (Result, error) {
+func (s *ExecutionService) runPythonContainer(dir string) (Result, error) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
 	args := []string {
@@ -73,7 +86,7 @@ func (s *ExecutionService) runContainer(dir string) (Result, error) {
 		"--user", "1000:1000", // matches the UID set in docker container.
 		"-v", dir + ":/code:ro", // mount temp dir, read-only
 		"python-sandbox",          // the image
-		"python", "/code/script.py", // the command to run inside it
+		"python", "/code/code.py", // the command to run inside it
 	}
 
 	// build timeout context ("timer object"). Cancels itself

@@ -13,6 +13,7 @@ import (
 
 type RunRequest struct {
 	Code string `json:"code"`
+	Language string `json:"language"`
 }
 
 type Result struct {
@@ -44,11 +45,14 @@ func (H *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 }
 
 // Run is a method on Handler, so you can use h.svc inside it.
+// From http.ListenAndServe, for each request the server builds a responsewritter object and 
+// the request itself.
 func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 	// Read JSON body
 	r.Body = http.MaxBytesReader(w, r.Body, 100<<10)
 	var req RunRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -67,7 +71,7 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run the code
-	res, err := h.svc.RunPython(req.Code)
+	res, err := h.svc.Run(req.Code, req.Language)
 	if err != nil {
 		log.Printf("Run failed: %v", err)
 		http.Error(w, "Execution failed", http.StatusInternalServerError)
