@@ -13,6 +13,8 @@ export default function CodeEditor() {
         { label: "Python", value: "python"},
         { label: "Typescript", value: "typescript"},
         { label: "Javascript", value: "javascript"},
+        { label: "C++", value: "cpp"},
+        { label: "C#", value: "csharp"},
     ]
 
     const handleRunClick = async () => {
