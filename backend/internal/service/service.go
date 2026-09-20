@@ -54,7 +54,7 @@ func (s *ExecutionService) Run(code string, language string) (Result, error) {
 		return Result{}, err
 	}
 
-	// Creates script.py inside temp folder we created
+	// Creates code file inside temp folder we created
 	// with updated permissions. 0o644 means everyone can ready the file.
 	// Only we can write to it.
 	extension := fileExtensions[language]
