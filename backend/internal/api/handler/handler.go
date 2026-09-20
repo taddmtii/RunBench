@@ -16,17 +16,17 @@ type RunRequest struct {
 }
 
 type RunResponse struct {
-	Stdout string `json:"stdout"` 
-	Stderr string `json:"stderr"` 
-	ExitCode int  `json:"exitCode"` 
-	TimedOut bool `json:"timedOut"` 
+	Stdout   string `json:"stdout"`
+	Stderr   string `json:"stderr"`
+	ExitCode int    `json:"exitCode"`
+	TimedOut bool   `json:"timedOut"`
 }
 
 type Handler struct {
 	// buffered channel used as a counter. Each running job holds one slot.
 	// chan is Go's built in pipe for passing values between goroutines.
 	// struct is empty as we do not use this pipe to send data, but as a counter.
-	svc *service.ExecutionService
+	svc   *service.ExecutionService
 	slots chan struct{}
 }
 
@@ -37,6 +37,10 @@ func NewHandler(svc *service.ExecutionService, maxConcurrent int) (*Handler, err
 		return nil, errors.New("You cannot have more than 5 concurrent requests at once.")
 	}
 	return &Handler{svc: svc, slots: make(chan struct{}, maxConcurrent)}, nil
+}
+
+func (H *Handler) Submit(w http.ResponseWriter, r *http.Request) {
+
 }
 
 // Run is a method on Handler, so you can use h.svc inside it.
@@ -72,8 +76,8 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(RunResponse{
-		Stdout: res.Stdout,
-		Stderr: res.Stderr,
+		Stdout:   res.Stdout,
+		Stderr:   res.Stderr,
 		ExitCode: res.ExitCode,
 		TimedOut: res.TimedOut,
 	})

@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-// Sets up HTTP routes (look into chi, gin)
-// Points routes to handlers
+// Sets up HTTP routes, and points them to reference to handler function
 
 func Router(h *handler.Handler) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /execute", h.Run)
+	mux.HandleFunc("POST /run", h.Run)
+	mux.HandleFunc("POST /submit", h.Submit)
 	return mux
 }

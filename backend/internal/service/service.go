@@ -6,8 +6,8 @@ package service
 // Aggregate results and return
 
 type Result struct {
-	Stdout string
-	Stderr string
+	Stdout   string
+	Stderr   string
 	ExitCode int
 	TimedOut bool
 }
