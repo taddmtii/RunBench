@@ -75,10 +75,12 @@ func (s *ExecutionService) runContainer(dir string) (Result, error) {
 		"python-sandbox",          // the image
 		"python", "/code/script.py", // the command to run inside it
 	}
+
 	// build timeout context ("timer object"). Cancels itself
-	// after 5 seconds. Resources are rerelesaed if command finishes early.
-	ctx, cancel := context.WithTimeout(context.Background(), (5*time.Second))
+	// after 5 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	// exec.Command itself creates a Cmd struct that represents an entire external process.
 	// this executes the command with a context. When context expires, Go kills this process automatically.
 	// super convenient
@@ -99,6 +101,11 @@ func (s *ExecutionService) runContainer(dir string) (Result, error) {
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			timedOut = true
+			// Forced timeout of 3 seconds for entire container.
+			containerCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			cmd := exec.CommandContext(containerCtx, "docker", "kill", name)
+			cmd.Run()
+			cancel()
 		}
 		fmt.Println("error while running docker run command: ", err)
 		exitCode = 1
