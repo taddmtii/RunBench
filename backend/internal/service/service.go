@@ -62,13 +62,17 @@ func (s *ExecutionService) Run(code string, language string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-
-
+	switch language {
+	case "python":
+		return s.RunPythonContainer(dir)
+	case "typescript":
+		return s.RunTypescriptContainer(dir)
+	}
 	return s.runContainer(dir)
 }
 
 // Runs a container against a directory containing the file with code.
-func (s *ExecutionService) runPythonContainer(dir string) (Result, error) {
+func (s *ExecutionService) RunPythonContainer(dir string) (Result, error) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
 	args := []string {
@@ -130,4 +134,8 @@ func (s *ExecutionService) runPythonContainer(dir string) (Result, error) {
 		ExitCode: exitCode,
 		TimedOut: timedOut,
 	}, nil
+}
+
+func (s* ExecutionService) RunTypescriptContainer(dir string) (Result, error) {
+	return Result{}, nil
 }
