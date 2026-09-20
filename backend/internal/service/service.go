@@ -19,6 +19,8 @@ type Result struct {
 	TimedOut bool
 }
 
+type FileExtensions struct {}
+
 // Exists jsut so we can put methods on it like RunPython
 type ExecutionService struct{}
 
@@ -28,7 +30,16 @@ func NewExecutionService() *ExecutionService {
 }
 
 // Prepares files and directory, and then calls runContainer with the code.
-func (s *ExecutionService) RunPython(code string) (Result, error) {
+func (s *ExecutionService) Run(code string, language string) (Result, error) {
+	
+	fileExtensions := map[string]string {
+		"python" : ".py",
+		"typescript": ".ts",
+		"javascript": ".js",
+		"csharp": ".cs",
+		"cpp": ".cpp",
+	}
+
 	// Create new folder in the OS temp location. * is replaced by a random number.
 	dir, err := os.MkdirTemp("", "sandbox-*")
 	if err != nil {
@@ -44,27 +55,42 @@ func (s *ExecutionService) RunPython(code string) (Result, error) {
 		return Result{}, err
 	}
 
-	// Creates script.py inside temp folder we created
+	// Creates code file inside temp folder we created
 	// with updated permissions. 0o644 means everyone can ready the file.
 	// Only we can write to it.
-	err = os.WriteFile(filepath.Join(dir, "script.py"), []byte(code), 0o644)
+	extension := fileExtensions[language]
+	err = os.WriteFile(filepath.Join(dir, "code" + extension), []byte(code), 0o644)
 	if err != nil {
 		return Result{}, err
 	}
-	return s.runContainer(dir)
+	// Run separate containers depending on what language it is.
+	switch language {
+	case "python":
+		return s.RunContainer(dir, "python-sandbox", "python", extension)
+	case "typescript":
+		return s.RunContainer(dir, "typescript-sandbox", "tsx", extension)
+	case "javascript":
+		return s.RunContainer(dir, "javascript-sandbox", "node", extension)
+	case "cpp":
+		return s.RunContainer(dir, "cpp-sandbox", "run-cpp", extension)
+	case "csharp":
+		return s.RunContainer(dir, "csharp-sandbox", "run-csharp", extension)
+	}
+	return Result{}, nil
 }
 
-// Runs a container against a directory containing the file with code.
-func (s *ExecutionService) runContainer(dir string) (Result, error) {
+// Used to build the args depending on the language chosen. Takes the image string and extension for code file
+func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string) ([]string, string) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
 	args := []string {
 		"run",
 		"--rm",         // delete the container when it exits
 		"--name", name, // we can kill it by name if need be
+		"--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
 		"--network", "none", // no network access
-		"--memory", "128m", // memory cap
-		"--memory-swap", "128m",
+		"--memory", "256m", // memory cap
+		"--memory-swap", "256m",
 		"--cpus", "0.5", // CPU cap
 		"--pids-limit", "64", // stops fork (process) bombs
 		"--read-only",       // read-only container filesystem
@@ -72,13 +98,24 @@ func (s *ExecutionService) runContainer(dir string) (Result, error) {
 		"--security-opt", "no-new-privileges",
 		"--user", "1000:1000", // matches the UID set in docker container.
 		"-v", dir + ":/code:ro", // mount temp dir, read-only
-		"python-sandbox",          // the image
-		"python", "/code/script.py", // the command to run inside it
 	}
+	// Conditional flags before image and command for running file.
+	if extension == ".cpp" || extension == ".cs" {
+		// CPP + CS dockerfile has a special temp filesystem called work that
+		// allows exec, since thats where the compiled binary must run.
+		args = append(args, "--tmpfs", "/work:rw,exec,nosuid,size=64m")
+	}
+	args = append(args, image, command, "/code/code" + extension)
+	return args, name
+}
+
+// Runs a container against a directory containing the file with code.
+func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string) (Result, error) {
+	args, name := s.BuildDockerRunArgs(dir, image, command, extension)
 
 	// build timeout context ("timer object"). Cancels itself
-	// after 5 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// after 10 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// exec.Command itself creates a Cmd struct that represents an entire external process.

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { code } = body;
+  const { code, language } = body;
   if (!code) {
     return NextResponse.json(
       { message: "There was a problem with the request" },
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ code: code }),
+    body: JSON.stringify({ code: code, language: language }),
   });
   const data = await res.json();
   return NextResponse.json(data);

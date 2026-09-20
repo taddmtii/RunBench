@@ -13,6 +13,8 @@ export default function CodeEditor() {
         { label: "Python", value: "python"},
         { label: "Typescript", value: "typescript"},
         { label: "Javascript", value: "javascript"},
+        { label: "C++", value: "cpp"},
+        { label: "C#", value: "csharp"},
     ]
 
     const handleRunClick = async () => {
@@ -21,7 +23,7 @@ export default function CodeEditor() {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({code: code})
+        body: JSON.stringify({code: code, language: language})
         })
         if (!res.ok) {
             console.error("Something went wrong with Run.")
