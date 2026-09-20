@@ -18,6 +18,9 @@ func main() {
 	mux := router.Router(h)
 
 	log.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
-
+	// Listens on port 8080 and starts a new goroutine with asscoiated handler everytime serve is called.
+	err = http.ListenAndServe(":8080", mux)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

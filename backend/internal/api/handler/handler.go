@@ -15,7 +15,7 @@ type RunRequest struct {
 	Code string `json:"code"`
 }
 
-type RunResponse struct {
+type Result struct {
 	Stdout   string `json:"stdout"`
 	Stderr   string `json:"stderr"`
 	ExitCode int    `json:"exitCode"`
@@ -75,7 +75,7 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(RunResponse{
+	json.NewEncoder(w).Encode(Result{
 		Stdout:   res.Stdout,
 		Stderr:   res.Stderr,
 		ExitCode: res.ExitCode,

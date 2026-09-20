@@ -3,12 +3,9 @@ package service
 import (
 	"os"
 	"path/filepath"
-)
 
-// Contains main logic for ...
-// Initializing Docker clinet
-// For each test case spin up container, execute code and caputre any output or errors.
-// Aggregate results and return
+	"github.com/google/uuid"
+)
 
 type Result struct {
 	Stdout   string
@@ -43,11 +40,38 @@ func (s *ExecutionService) RunPython(code string) (Result, error) {
 	}
 
 	// Creates script.py inside temp folder we created
-	// with updated permissions. so that only the contianer
-	// can read the file.
+	// with updated permissions. 0o644 means everyone can ready the file.
+	// Only we can write to it.
 	err = os.WriteFile(filepath.Join(dir, "script.py"), []byte(code), 0o644)
 	if err != nil {
 		return Result{}, err
 	}
+	return s.runContainer(dir)
+}
 
+// Runs a container against a directory containing the file with code.
+func (s *ExecutionService) runContainer(dir string) (Result, error) {
+	// build docker run command with isolation flags
+	name := "exec-" + uuid.NewString()
+	args := []string{
+		"run",
+		"--rm",         // delete the container when it exits
+		"--name", name, // we can kill it by name if need be
+		"--network", "none", // no network access
+		"--memory", "128m", // memory cap
+		"--cpus", "0.5", // CPU cap
+		"--pids-limit", "64", // stops fork (process) bombs
+		"--read-only",       // read-only container filesystem
+		"--cap-drop", "ALL", // drop all Linux capabilities
+		"--security-opt", "no-new-privileges",
+		"--user", "1000:1000", // matches the UID in your RunPython comment
+		"-v", dir + ":/code:ro", // mount your temp dir, read-only
+		"python:3.12-slim",          // the image
+		"python", "/code/script.py", // the command to run inside it
+	}
+
+	// run it wiht a timeout
+	// capture stdout and stderr
+	// handle timeout, non-zero exit, and real errors
+	return Result{}, nil
 }
