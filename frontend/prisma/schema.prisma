@@ -12,18 +12,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Difficulty {
-  EASY
-  MEDIUM
-  HARD
-}
-
-enum Language {
-  PYTHON
-  JAVASCRIPT
-  TYPESCRIPT
-}
-
 model User {
   id              String   @id @default(uuid())
   firstName       String
@@ -58,7 +46,7 @@ model Problem {
   id                         String          @id @default(uuid())
   title                      String
   description                String
-  difficulty                 Difficulty
+  difficulty                 String
   topic                      String          @default("")
   recommendedTimeComplexity  String          @default("")
   recommendedSpaceComplexity String          @default("")
@@ -79,7 +67,7 @@ model Solution {
   name            String
   description     String
   timeComplexity  String
-  language        Language
+  language        String
   rawCode         String
   runtime         Int
   optimal         Boolean  @default(false)
@@ -97,7 +85,7 @@ model Submission {
   userId                  String
   problemId               String
   rawCode                 String
-  language                Language
+  language                String
   runtime                 Int
   proposedOptimal         Boolean?
   proposedTimeComplexity  String?

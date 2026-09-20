@@ -146,7 +146,7 @@ export default function Problem() {
 
       {/* Editor */}
       <div className="w-1/2 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
-        <CodeEditor />
+        <CodeEditor testCases={problem?.testCases ?? []} />
       </div>
     </div>
   );

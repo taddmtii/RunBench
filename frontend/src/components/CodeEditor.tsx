@@ -4,10 +4,16 @@ import { useState } from "react";
 import { Editor } from "@monaco-editor/react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Button } from "../components/ui/button";
+import { TestCase } from "../../generated/prisma/client";
 
-export default function CodeEditor() {
+interface CodeEditorProps {
+    testCases: TestCase[]
+}   
+
+export default function CodeEditor({testCases}: CodeEditorProps) {
     const [language, setLanguage] = useState("python")
     const [code, setCode] = useState("")
+    const [showConsole, setShowConsole] = useState(true);
 
     const LANGUAGES = [
         { label: "Python", value: "python"},
@@ -34,7 +40,19 @@ export default function CodeEditor() {
     }
 
     const handleSubmitClick = async () => {
-
+        const res = await fetch("/api/submit", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({code: code, language: language, testCases: testCases})
+        })
+        if (!res.ok) {
+            console.error("Something went wrong with Run.")
+            return
+        } 
+        const data = await res.json();
+        console.log(data)
     }
 
     return (
@@ -61,9 +79,9 @@ export default function CodeEditor() {
                 <Button className="cursor-pointer" onClick={handleRunClick}>Run</Button>
                 <Button className="bg-green-400 cursor-pointer" onClick={handleSubmitClick}>Submit</Button>
             </div>
-            <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-700 bg-gray-900">
+            <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-700">
                 <Editor 
-                    height="90vh"
+                    height={showConsole ? "70vh" : "90vh"}
                     width="50vw"
                     value={code}
                     onChange={(value) => setCode(value || "")} 
@@ -83,6 +101,16 @@ export default function CodeEditor() {
                     theme="vs-dark" 
                 />
             </div>
+            {showConsole ? (
+                <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-700 bg-gray-900">
+                    {testCases.map((testCase) => (
+                    <pre key={testCase.id} className="p-2 text-sm text-gray-200">
+                        {JSON.stringify(testCase.input, null, 2)}
+                    </pre>
+                ))}
+                </div>
+            ) : ("")}
+            
         </div>
     )
 }
