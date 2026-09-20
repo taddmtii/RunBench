@@ -62,17 +62,20 @@ func (s *ExecutionService) Run(code string, language string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	// Run separate containers depending on what language it is.
 	switch language {
 	case "python":
-		return s.RunPythonContainer(dir)
+		return s.RunContainer(dir, "python-sandbox", language, extension)
 	case "typescript":
-		return s.RunTypescriptContainer(dir)
+		return s.RunContainer(dir, "typescript-sandbox", language, extension)
+	case "javascript":
+		return s.RunContainer(dir, "javascript-sandbox", language, extension)
 	}
-	return s.runContainer(dir)
+	// return s.RunContainer(dir)
 }
 
-// Runs a container against a directory containing the file with code.
-func (s *ExecutionService) RunPythonContainer(dir string) (Result, error) {
+// Used to build the args depending on the language chosen. Takes the image string and extension for code file
+func (s *ExecutionService) BuildDockerRunArgs(image string, language string, extension string) ([]string, error) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
 	args := []string {
@@ -89,9 +92,14 @@ func (s *ExecutionService) RunPythonContainer(dir string) (Result, error) {
 		"--security-opt", "no-new-privileges",
 		"--user", "1000:1000", // matches the UID set in docker container.
 		"-v", dir + ":/code:ro", // mount temp dir, read-only
-		"python-sandbox",          // the image
-		"python", "/code/code.py", // the command to run inside it
+		image,          // the image
+		language, "/code/code" + extension, // the command to run inside it
 	}
+}
+
+// Runs a container against a directory containing the file with code.
+func (s *ExecutionService) RunContainer(dir string, image string, langauge string, extension string) (Result, error) {
+	args := BuildDockerRunArgs(image, language, extension)
 
 	// build timeout context ("timer object"). Cancels itself
 	// after 5 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
@@ -136,6 +144,11 @@ func (s *ExecutionService) RunPythonContainer(dir string) (Result, error) {
 	}, nil
 }
 
-func (s* ExecutionService) RunTypescriptContainer(dir string) (Result, error) {
-	return Result{}, nil
-}
+// func (s* ExecutionService) RunTypescriptContainer(dir string) (Result, error) {
+// 	return Result{}, nil
+// }
+
+// func (s* ExecutionService) RunJavascriptContainer(dir string) (Result, error) {
+// 	return Result{}, nil
+// }
+
