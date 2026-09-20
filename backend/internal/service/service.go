@@ -19,7 +19,7 @@ type Result struct {
 	TimedOut bool
 }
 
-type FileExtensions struct
+type FileExtensions struct {}
 
 // Exists jsut so we can put methods on it like RunPython
 type ExecutionService struct{}
@@ -31,12 +31,13 @@ func NewExecutionService() *ExecutionService {
 
 // Prepares files and directory, and then calls runContainer with the code.
 func (s *ExecutionService) Run(code string, language string) (Result, error) {
+	
 	fileExtensions := map[string]string {
 		"python" : ".py",
 		"typescript": ".ts",
 		"javascript": ".js",
-		"csharp": ".cs"
-		"cpp": ".cpp"
+		"csharp": ".cs",
+		"cpp": ".cpp",
 	}
 
 	// Create new folder in the OS temp location. * is replaced by a random number.
@@ -65,26 +66,27 @@ func (s *ExecutionService) Run(code string, language string) (Result, error) {
 	// Run separate containers depending on what language it is.
 	switch language {
 	case "python":
-		return s.RunContainer(dir, "python-sandbox", language, extension)
+		return s.RunContainer(dir, "python-sandbox", "python", extension)
 	case "typescript":
-		return s.RunContainer(dir, "typescript-sandbox", language, extension)
+		return s.RunContainer(dir, "typescript-sandbox", "tsx", extension)
 	case "javascript":
-		return s.RunContainer(dir, "javascript-sandbox", language, extension)
+		return s.RunContainer(dir, "javascript-sandbox", "node", extension)
 	}
-	// return s.RunContainer(dir)
+	return Result{}, nil
 }
 
 // Used to build the args depending on the language chosen. Takes the image string and extension for code file
-func (s *ExecutionService) BuildDockerRunArgs(image string, language string, extension string) ([]string, error) {
+func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string) ([]string, string) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
 	args := []string {
 		"run",
 		"--rm",         // delete the container when it exits
 		"--name", name, // we can kill it by name if need be
+		"--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
 		"--network", "none", // no network access
-		"--memory", "128m", // memory cap
-		"--memory-swap", "128m",
+		"--memory", "256m", // memory cap
+		"--memory-swap", "256m",
 		"--cpus", "0.5", // CPU cap
 		"--pids-limit", "64", // stops fork (process) bombs
 		"--read-only",       // read-only container filesystem
@@ -93,13 +95,14 @@ func (s *ExecutionService) BuildDockerRunArgs(image string, language string, ext
 		"--user", "1000:1000", // matches the UID set in docker container.
 		"-v", dir + ":/code:ro", // mount temp dir, read-only
 		image,          // the image
-		language, "/code/code" + extension, // the command to run inside it
+		command, "/code/code" + extension, // the command to run inside it
 	}
+	return args, name
 }
 
 // Runs a container against a directory containing the file with code.
-func (s *ExecutionService) RunContainer(dir string, image string, langauge string, extension string) (Result, error) {
-	args := BuildDockerRunArgs(image, language, extension)
+func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string) (Result, error) {
+	args, name := s.BuildDockerRunArgs(dir, image, command, extension)
 
 	// build timeout context ("timer object"). Cancels itself
 	// after 5 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
