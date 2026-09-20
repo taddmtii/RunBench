@@ -1,8 +1,13 @@
 package service
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -22,7 +27,7 @@ func NewExecutionService() *ExecutionService {
 	return &ExecutionService{}
 }
 
-// Prepares files and directory.
+// Prepares files and directory, and then calls runContainer with the code.
 func (s *ExecutionService) RunPython(code string) (Result, error) {
 	// Create new folder in the OS temp location. * is replaced by a random number.
 	dir, err := os.MkdirTemp("", "sandbox-*")
@@ -53,25 +58,56 @@ func (s *ExecutionService) RunPython(code string) (Result, error) {
 func (s *ExecutionService) runContainer(dir string) (Result, error) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
-	args := []string{
+	args := []string {
 		"run",
 		"--rm",         // delete the container when it exits
 		"--name", name, // we can kill it by name if need be
 		"--network", "none", // no network access
 		"--memory", "128m", // memory cap
+		"--memory-swap", "128m",
 		"--cpus", "0.5", // CPU cap
 		"--pids-limit", "64", // stops fork (process) bombs
 		"--read-only",       // read-only container filesystem
-		"--cap-drop", "ALL", // drop all Linux capabilities
+		"--cap-drop", "ALL", // drop all Linux capabilities.
 		"--security-opt", "no-new-privileges",
-		"--user", "1000:1000", // matches the UID in your RunPython comment
-		"-v", dir + ":/code:ro", // mount your temp dir, read-only
-		"python:3.12-slim",          // the image
+		"--user", "1000:1000", // matches the UID set in docker container.
+		"-v", dir + ":/code:ro", // mount temp dir, read-only
+		"python-sandbox",          // the image
 		"python", "/code/script.py", // the command to run inside it
 	}
+	// build timeout context ("timer object"). Cancels itself
+	// after 5 seconds. Resources are rerelesaed if command finishes early.
+	ctx, cancel := context.WithTimeout(context.Background(), (5*time.Second))
+	defer cancel()
+	// exec.Command itself creates a Cmd struct that represents an entire external process.
+	// this executes the command with a context. When context expires, Go kills this process automatically.
+	// super convenient
+	cmd := exec.CommandContext(ctx, "docker", args...)
 
-	// run it wiht a timeout
-	// capture stdout and stderr
-	// handle timeout, non-zero exit, and real errors
-	return Result{}, nil
+
+	// bytes.Buffer implements io.Writer, whcih cmd.stdout and cmd.stderr expect.
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	// zero value in go for int is 0 automatically, so assumed success if we do not hit an error.
+	var exitCode int
+	var timedOut bool
+
+	// Run the command.
+	err := cmd.Run()
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			timedOut = true
+		}
+		fmt.Println("error while running docker run command: ", err)
+		exitCode = err.Error()
+	}
+
+	return Result{
+		Stdout: stdout,
+		Stderr: stderr,
+		ExitCode: exitCode,
+		TimedOut: timedOut,
+	}, nil
 }
