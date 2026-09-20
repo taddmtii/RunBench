@@ -4,6 +4,7 @@ import (
 	"backend/internal/service"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 )
 
@@ -38,7 +39,7 @@ func NewHandler(svc *service.ExecutionService, maxConcurrent int) (*Handler, err
 	return &Handler{svc: svc, slots: make(chan struct{}, maxConcurrent)}, nil
 }
 
-// function signature says you can only call Run on a Handler ()
+// Run is a method on Handler, so you can use h.svc inside it.
 func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 	// Read JSON body
 	r.Body = http.MaxBytesReader(w, r.Body, 100<<10)
@@ -47,4 +48,33 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	// Take a slot in channel or reject if all are in use / is full.
+	// select looks at channel operation and picks whichever one can happen now.
+	select {
+	// send an empty struct into the channel to reserve a space.
+	case h.slots <- struct{}{}:
+		// Take one token out, defer schedudles it to run when Run finishes as cleanup.
+		defer func() { <-h.slots }()
+	// if full, say server is busy.
+	default:
+		http.Error(w, "Server busy, try again.", http.StatusTooManyRequests)
+		return
+	}
+
+	// Run the code
+	res, err := h.svc.RunPython(req.Code)
+	if err != nil {
+		log.Printf("Run failed: %v", err)
+		http.Error(w, "Execution failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(RunResponse{
+		Stdout: res.Stdout,
+		Stderr: res.Stderr,
+		ExitCode: res.ExitCode,
+		TimedOut: res.TimedOut,
+	})
 }
