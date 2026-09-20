@@ -101,12 +101,12 @@ func (s *ExecutionService) runContainer(dir string) (Result, error) {
 			timedOut = true
 		}
 		fmt.Println("error while running docker run command: ", err)
-		exitCode = err.Error()
+		exitCode = 1
 	}
 
 	return Result{
-		Stdout: stdout,
-		Stderr: stderr,
+		Stdout: stdout.String(),
+		Stderr: stderr.String(),
 		ExitCode: exitCode,
 		TimedOut: timedOut,
 	}, nil
