@@ -39,11 +39,9 @@ export default function CodeEditor() {
         <div className="flex flex-col items-center justify-between gap-2 p-4">
             <div className="flex">
                 <DropdownMenu>
-                    <DropdownMenuTrigger>
-                        <Button variant="outline">
+                    <DropdownMenuTrigger render={<Button variant="outline" />}>
                             {/* Needed to capitalize first letter of value and monaco only takes lowercase values */}
                             {language.charAt(0).toUpperCase() + language.slice(1)}
-                        </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuGroup>
