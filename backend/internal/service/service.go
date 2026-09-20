@@ -71,6 +71,10 @@ func (s *ExecutionService) Run(code string, language string) (Result, error) {
 		return s.RunContainer(dir, "typescript-sandbox", "tsx", extension)
 	case "javascript":
 		return s.RunContainer(dir, "javascript-sandbox", "node", extension)
+	case "cpp":
+		return s.RunContainer(dir, "cpp-sandbox", "run-cpp", extension)
+	case "csharp":
+		return s.RunContainer(dir, "csharp-sandbox", "run-csharp", extension)
 	}
 	return Result{}, nil
 }
@@ -94,9 +98,14 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 		"--security-opt", "no-new-privileges",
 		"--user", "1000:1000", // matches the UID set in docker container.
 		"-v", dir + ":/code:ro", // mount temp dir, read-only
-		image,          // the image
-		command, "/code/code" + extension, // the command to run inside it
 	}
+	// Conditional flags before image and command for running file.
+	if extension == ".cpp" || extension == ".cs" {
+		// CPP + CS dockerfile has a special temp filesystem called work that
+		// allows exec, since thats where the compiled binary must run.
+		args = append(args, "--tmpfs", "/work:rw,exec,nosuid,size=64m")
+	}
+	args = append(args, image, command, "/code/code" + extension)
 	return args, name
 }
 
@@ -105,8 +114,8 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 	args, name := s.BuildDockerRunArgs(dir, image, command, extension)
 
 	// build timeout context ("timer object"). Cancels itself
-	// after 5 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// after 10 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// exec.Command itself creates a Cmd struct that represents an entire external process.
@@ -146,12 +155,3 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 		TimedOut: timedOut,
 	}, nil
 }
-
-// func (s* ExecutionService) RunTypescriptContainer(dir string) (Result, error) {
-// 	return Result{}, nil
-// }
-
-// func (s* ExecutionService) RunJavascriptContainer(dir string) (Result, error) {
-// 	return Result{}, nil
-// }
-

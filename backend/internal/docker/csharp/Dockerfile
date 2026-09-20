@@ -6,8 +6,6 @@ ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     DOTNET_NOLOGO=1 \
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
-RUN useradd -m -u 1000 sandbox
-
 # Point every writable location at /work, since the root is read-only.
 RUN printf '#!/bin/sh\nexport HOME=/work DOTNET_CLI_HOME=/work TMPDIR=/work\ndotnet run "$1"\n' > /usr/local/bin/run-csharp \
  && chmod +x /usr/local/bin/run-csharp
