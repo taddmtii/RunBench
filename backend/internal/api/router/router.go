@@ -1,9 +1,8 @@
 package router
 
 import (
-	"net/http"
-
 	"backend/internal/api/handler"
+	"net/http"
 )
 
 // Sets up HTTP routes (look into chi, gin)

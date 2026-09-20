@@ -2,6 +2,8 @@ package handler
 
 import (
 	"backend/internal/service"
+	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -29,8 +31,20 @@ type Handler struct {
 
 // Constructor, make a buffered channel with a max value of items it can hold.
 // Returns a pointer to the handler. All requests share same handler and same channel.
-func NewHandler(maxConcurrent int) *Handler {
-	return &Handler{slots: make(chan struct{}, maxConcurrent)}
+func NewHandler(svc *service.ExecutionService, maxConcurrent int) (*Handler, error) {
+	if maxConcurrent > 5 {
+		return nil, errors.New("You cannot have more than 5 concurrent requests at once.")
+	}
+	return &Handler{svc: svc, slots: make(chan struct{}, maxConcurrent)}, nil
 }
 
-func Run(svc *service.ExecutionService) http.HandlerFunc {}
+// function signature says you can only call Run on a Handler ()
+func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
+	// Read JSON body
+	r.Body = http.MaxBytesReader(w, r.Body, 100<<10)
+	var req RunRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+}
