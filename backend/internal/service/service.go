@@ -12,14 +12,33 @@ import (
 	"github.com/google/uuid"
 )
 
-type Result struct {
+// type TestCase struct {
+// 	Input json.RawMessage `json:"input"`
+// 	ExpectedOutput string `json:"expectedOutput"`
+// }
+
+type RunResult struct {
 	Stdout   string
 	Stderr   string
 	ExitCode int
 	TimedOut bool
 }
 
-type FileExtensions struct {}
+type SubmitResult struct {
+	Stdout   string `json:"stdout"`
+	Stderr   string `json:"stderr"`
+	ExitCode int    `json:"exitCode"`
+	TimedOut bool   `json:"timedOut"`
+	FailedTestCases []TestCase `json:"failedTestCases"`
+}
+
+var fileExtensions = map[string]string {
+		"python" : ".py",
+		"typescript": ".ts",
+		"javascript": ".js",
+		"csharp": ".cs",
+		"cpp": ".cpp",
+	}
 
 // Exists jsut so we can put methods on it like RunPython
 type ExecutionService struct{}
@@ -29,54 +48,67 @@ func NewExecutionService() *ExecutionService {
 	return &ExecutionService{}
 }
 
-// Prepares files and directory, and then calls runContainer with the code.
-func (s *ExecutionService) Run(code string, language string) (Result, error) {
-	
-	fileExtensions := map[string]string {
-		"python" : ".py",
-		"typescript": ".ts",
-		"javascript": ".js",
-		"csharp": ".cs",
-		"cpp": ".cpp",
-	}
+// Creates temp sandbox directory containing code file to run.
+func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (string, string, error) {
+	extension := fileExtensions[langauge]
 
 	// Create new folder in the OS temp location. * is replaced by a random number.
 	dir, err := os.MkdirTemp("", "sandbox-*")
 	if err != nil {
-		return Result{}, err
+		return "", "", err
 	}
-	// Schedules deletion of folder when func returns
-	defer os.RemoveAll(dir)
 
 	// Container user is UID 1000, which is not permitted to view it.
 	// Changes folders permissions so that everyone can read it
 	err = os.Chmod(dir, 0o755)
 	if err != nil {
-		return Result{}, err
+		os.RemoveAll(dir)
+		return "", "", err
 	}
 
 	// Creates code file inside temp folder we created
 	// with updated permissions. 0o644 means everyone can ready the file.
 	// Only we can write to it.
-	extension := fileExtensions[language]
 	err = os.WriteFile(filepath.Join(dir, "code" + extension), []byte(code), 0o644)
 	if err != nil {
-		return Result{}, err
+		os.RemoveAll(dir)
+		return "", "", err
 	}
+	return dir, extension, nil
+}
+
+// Prepares files and directory, and then calls runContainer with the code.
+func (s *ExecutionService) Run(code string, language string) (RunResult, error) {
+	dir, extension, err :=  s.CreateTempDirAndFile(code, language)
+
+	if err != nil {
+		return RunResult{}, err
+	}
+
+	// Schedule deletion of temp directory once we exit this function.
+	defer os.RemoveAll(dir)
+
+	var image string
+	var command string
 	// Run separate containers depending on what language it is.
 	switch language {
 	case "python":
-		return s.RunContainer(dir, "python-sandbox", "python", extension)
+		image, command = "python-sandbox", "python"
 	case "typescript":
-		return s.RunContainer(dir, "typescript-sandbox", "tsx", extension)
+		image, command = "typescript-sandbox", "tsx"
 	case "javascript":
-		return s.RunContainer(dir, "javascript-sandbox", "node", extension)
+		image, command = "javascript-sandbox", "node"
 	case "cpp":
-		return s.RunContainer(dir, "cpp-sandbox", "run-cpp", extension)
+		image, command = "cpp-sandbox", "run-cpp"
 	case "csharp":
-		return s.RunContainer(dir, "csharp-sandbox", "run-csharp", extension)
+		image, command = "csharp-sandbox", "run-csharp"
 	}
-	return Result{}, nil
+	return s.RunContainer(dir, image, command, extension)
+	
+}
+
+func (s *ExecutionService) Submit(code string, language string, testCases []TestCase) (SubmitResult, error) {
+
 }
 
 // Used to build the args depending on the language chosen. Takes the image string and extension for code file
@@ -110,7 +142,7 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 }
 
 // Runs a container against a directory containing the file with code.
-func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string) (Result, error) {
+func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string) (RunResult, error) {
 	args, name := s.BuildDockerRunArgs(dir, image, command, extension)
 
 	// build timeout context ("timer object"). Cancels itself
@@ -122,7 +154,6 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 	// this executes the command with a context. When context expires, Go kills this process automatically.
 	// super convenient
 	cmd := exec.CommandContext(ctx, "docker", args...)
-
 
 	// bytes.Buffer implements io.Writer, whcih cmd.stdout and cmd.stderr expect.
 	var stdout bytes.Buffer
@@ -148,7 +179,7 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 		exitCode = 1
 	}
 
-	return Result{
+	return RunResult{
 		Stdout: stdout.String(),
 		Stderr: stderr.String(),
 		ExitCode: exitCode,
