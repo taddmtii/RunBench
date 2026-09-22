@@ -11,16 +11,34 @@ import (
 // Handler for retrieving HTTP request with code and a test cases array
 // Calls service and returns the response.
 
+type TestCase struct {
+
+}
+
 type RunRequest struct {
 	Code string `json:"code"`
 	Language string `json:"language"`
 }
 
-type Result struct {
+type SubmitRequest struct {
+	Code string `json:"code"`
+	Language string `json:"language"`
+	TestCases []TestCase `json:"testCases"`
+}
+
+type RunResult struct {
 	Stdout   string `json:"stdout"`
 	Stderr   string `json:"stderr"`
 	ExitCode int    `json:"exitCode"`
 	TimedOut bool   `json:"timedOut"`
+}
+
+type SubmitResult struct {
+	Stdout   string `json:"stdout"`
+	Stderr   string `json:"stderr"`
+	ExitCode int    `json:"exitCode"`
+	TimedOut bool   `json:"timedOut"`
+	FailedTestCases []TestCase `json:"failedTestCases"`
 }
 
 type Handler struct {

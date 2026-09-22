@@ -107,7 +107,7 @@ export default function Login() {
     "w-full rounded-md border border-input  px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-colors";
 
   return (
-    <div className="flex min-h-screen items-center justify-center  px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl mb-6">
