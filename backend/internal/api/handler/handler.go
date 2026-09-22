@@ -12,7 +12,8 @@ import (
 // Calls service and returns the response.
 
 type TestCase struct {
-
+	Input json.RawMessage `json:"input"`
+	ExpectedOutput string `json:"expectedOutput"`
 }
 
 type RunRequest struct {
@@ -97,7 +98,7 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Result{
+	json.NewEncoder(w).Encode(RunResult{
 		Stdout:   res.Stdout,
 		Stderr:   res.Stderr,
 		ExitCode: res.ExitCode,

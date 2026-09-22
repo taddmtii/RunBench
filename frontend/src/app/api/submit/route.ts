@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { testCases, code } = body;
-  if (!code || !testCases) {
+  const { code, language, testCases } = body;
+  if (!code || !testCases || !language) {
     return NextResponse.json(
       { message: "There was a problem with the request" },
       { status: 400 },
@@ -11,5 +11,17 @@ export async function POST(request: NextRequest) {
   }
   // Send code to Go service. This should execute code in the sandboxed execution environment and
   // run any associated test cases
-  return NextResponse.json({ message: "Sucesss" }, { status: 200 });
+  const res = await fetch("http://localhost:8080/submit", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      code: code,
+      language: language,
+      testCases: testCases,
+    }),
+  });
+  const data = await res.json();
+  return NextResponse.json(data);
 }
