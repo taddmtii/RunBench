@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,10 +13,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// type TestCase struct {
-// 	Input json.RawMessage `json:"input"`
-// 	ExpectedOutput string `json:"expectedOutput"`
-// }
+type TestCase struct {
+	Input json.RawMessage `json:"input"`
+	ExpectedOutput string `json:"expectedOutput"`
+}
 
 type RunResult struct {
 	Stdout   string
