@@ -81,7 +81,6 @@ func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (s
 // Prepares files and directory, and then calls runContainer with the code.
 func (s *ExecutionService) Run(code string, language string) (RunResult, error) {
 	dir, extension, err :=  s.CreateTempDirAndFile(code, language)
-
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -105,13 +104,60 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 		image, command = "csharp-sandbox", "run-csharp"
 	}
 	return s.RunContainer(dir, image, command, extension)
-	
 }
 
 func (s *ExecutionService) Submit(code string, language string, testCases []TestCase) (SubmitResult, error) {
+	dir, extension, err :=  s.CreateTempDirAndFile(code, language)
+	if err != nil {
+		return SubmitResult{}, err
+	}
 
+	// Schedule deletion of temp directory once we exit this function.
+	defer os.RemoveAll(dir)
+
+	var image string
+	var command string
+	// Run separate containers depending on what language it is.
+	switch language {
+	case "python":
+		image, command = "python-sandbox", "python"
+	case "typescript":
+		image, command = "typescript-sandbox", "tsx"
+	case "javascript":
+		image, command = "javascript-sandbox", "node"
+	case "cpp":
+		image, command = "cpp-sandbox", "run-cpp"
+	case "csharp":
+		image, command = "csharp-sandbox", "run-csharp"
+	}
+	runResult, err := s.RunContainer(dir, image, command, extension)
+	if err != nil {
+		return SubmitResult{}, err
+	}
+	// Initial run is successful, run each test case
+	if runResult.ExitCode == 0 {
+		failed, err := s.RunTestCases(testCases)
+		if err != nil {
+			return SubmitResult{}, err
+		}
+		return SubmitResult{
+			Stdout: runResult.Stdout,
+			Stderr: runResult.Stderr,
+			ExitCode: runResult.ExitCode,
+			TimedOut: runResult.TimedOut,
+			FailedTestCases: failed,
+		}, nil
+	}
+	return SubmitResult{}, nil
 }
 
+func (s *ExecutionService) RunTestCases(testCases []TestCase) ([]TestCase, error) {
+	failed := make([]TestCase, len(testCases))
+	// For each test case...
+	// Spin up go routine to run case concurrently
+	return failed, nil
+}
+ 
 // Used to build the args depending on the language chosen. Takes the image string and extension for code file
 func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string) ([]string, string) {
 	// build docker run command with isolation flags

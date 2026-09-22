@@ -77,7 +77,7 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Run the code
+	// Run the code and associated test cases.
 	res, err := h.svc.Submit(req.Code, req.Language, req.TestCases)
 	if err != nil {
 		log.Printf("Submit failed: %v", err)
