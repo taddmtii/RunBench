@@ -103,7 +103,7 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 	case "csharp":
 		image, command = "csharp-sandbox", "run-csharp"
 	}
-	return s.RunContainer(dir, image, command, extension)
+	return s.RunContainer(dir, image, command, extension, "")
 }
 
 func (s *ExecutionService) Submit(code string, language string, testCases []TestCase) (SubmitResult, error) {
@@ -130,13 +130,13 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 	case "csharp":
 		image, command = "csharp-sandbox", "run-csharp"
 	}
-	runResult, err := s.RunContainer(dir, image, command, extension)
+	runResult, err := s.RunContainer(dir, image, command, extension, "")
 	if err != nil {
 		return SubmitResult{}, err
 	}
 	// Initial run is successful, run each test case
 	if runResult.ExitCode == 0 {
-		failed, err := s.RunTestCases(testCases)
+		failed, err := s.RunTestCases(dir, image, command, extension, testCases)
 		if err != nil {
 			return SubmitResult{}, err
 		}
@@ -151,10 +151,12 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 	return SubmitResult{}, nil
 }
 
-func (s *ExecutionService) RunTestCases(testCases []TestCase) ([]TestCase, error) {
+func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCase, error) {
 	failed := make([]TestCase, len(testCases))
-	// For each test case...
-	// Spin up go routine to run case concurrently
+	for i := 0; i < len(testCases); i++ {
+		// Spin up go routine to run case concurrently
+		// go s.RunContainer(dir, image, command, extension, string(testCases[i].Input))
+	}
 	return failed, nil
 }
  
@@ -189,7 +191,7 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 }
 
 // Runs a container against a directory containing the file with code.
-func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string) (RunResult, error) {
+func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string, input string) (RunResult, error) {
 	args, name := s.BuildDockerRunArgs(dir, image, command, extension)
 
 	// build timeout context ("timer object"). Cancels itself
@@ -210,6 +212,11 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 	// zero value in go for int is 0 automatically, so assumed success if we do not hit an error.
 	var exitCode int
 	var timedOut bool
+
+	// Read test cases input to stdin if we are running them.
+	if (input != "") {
+		cmd.Stdin = bytes.NewReader([]byte(input));
+	}
 
 	// Run the command.
 	err := cmd.Run()
