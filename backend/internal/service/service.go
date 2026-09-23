@@ -132,7 +132,12 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 	}
 	runResult, err := s.RunContainer(dir, image, command, extension, "")
 	if err != nil {
-		return SubmitResult{}, err
+		return SubmitResult{
+			Stdout: runResult.Stdout,
+			Stderr: runResult.Stderr,
+			ExitCode: runResult.ExitCode,
+			TimedOut: runResult.TimedOut,
+		}, err
 	}
 	// Initial run is successful, run each test case
 	if runResult.ExitCode == 0 {
@@ -167,6 +172,7 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 	args := []string {
 		"run",
 		"--rm",         // delete the container when it exits
+		"-i", // keep stdin open so test input reaches the program.
 		"--name", name, // we can kill it by name if need be
 		"--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
 		"--network", "none", // no network access
