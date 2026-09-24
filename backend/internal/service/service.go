@@ -8,14 +8,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type TestCase struct {
-	Input json.RawMessage `json:"input"`
-	ExpectedOutput string `json:"expectedOutput"`
+	Input          json.RawMessage `json:"input"`
+	ExpectedOutput string          `json:"expectedOutput"`
 }
 
 type RunResult struct {
@@ -26,20 +27,20 @@ type RunResult struct {
 }
 
 type SubmitResult struct {
-	Stdout   string `json:"stdout"`
-	Stderr   string `json:"stderr"`
-	ExitCode int    `json:"exitCode"`
-	TimedOut bool   `json:"timedOut"`
+	Stdout          string     `json:"stdout"`
+	Stderr          string     `json:"stderr"`
+	ExitCode        int        `json:"exitCode"`
+	TimedOut        bool       `json:"timedOut"`
 	FailedTestCases []TestCase `json:"failedTestCases"`
 }
 
-var fileExtensions = map[string]string {
-		"python" : ".py",
-		"typescript": ".ts",
-		"javascript": ".js",
-		"csharp": ".cs",
-		"cpp": ".cpp",
-	}
+var fileExtensions = map[string]string{
+	"python":     ".py",
+	"typescript": ".ts",
+	"javascript": ".js",
+	"csharp":     ".cs",
+	"cpp":        ".cpp",
+}
 
 // Exists jsut so we can put methods on it like RunPython
 type ExecutionService struct{}
@@ -70,7 +71,7 @@ func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (s
 	// Creates code file inside temp folder we created
 	// with updated permissions. 0o644 means everyone can ready the file.
 	// Only we can write to it.
-	err = os.WriteFile(filepath.Join(dir, "code" + extension), []byte(code), 0o644)
+	err = os.WriteFile(filepath.Join(dir, "code"+extension), []byte(code), 0o644)
 	if err != nil {
 		os.RemoveAll(dir)
 		return "", "", err
@@ -80,7 +81,7 @@ func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (s
 
 // Prepares files and directory, and then calls runContainer with the code.
 func (s *ExecutionService) Run(code string, language string) (RunResult, error) {
-	dir, extension, err :=  s.CreateTempDirAndFile(code, language)
+	dir, extension, err := s.CreateTempDirAndFile(code, language)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -107,7 +108,7 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 }
 
 func (s *ExecutionService) Submit(code string, language string, testCases []TestCase) (SubmitResult, error) {
-	dir, extension, err :=  s.CreateTempDirAndFile(code, language)
+	dir, extension, err := s.CreateTempDirAndFile(code, language)
 	if err != nil {
 		return SubmitResult{}, err
 	}
@@ -133,8 +134,8 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 	runResult, err := s.RunContainer(dir, image, command, extension, "")
 	if err != nil {
 		return SubmitResult{
-			Stdout: runResult.Stdout,
-			Stderr: runResult.Stderr,
+			Stdout:   runResult.Stdout,
+			Stderr:   runResult.Stderr,
 			ExitCode: runResult.ExitCode,
 			TimedOut: runResult.TimedOut,
 		}, err
@@ -146,10 +147,10 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 			return SubmitResult{}, err
 		}
 		return SubmitResult{
-			Stdout: runResult.Stdout,
-			Stderr: runResult.Stderr,
-			ExitCode: runResult.ExitCode,
-			TimedOut: runResult.TimedOut,
+			Stdout:          runResult.Stdout,
+			Stderr:          runResult.Stderr,
+			ExitCode:        runResult.ExitCode,
+			TimedOut:        runResult.TimedOut,
 			FailedTestCases: failed,
 		}, nil
 	}
@@ -157,22 +158,49 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 }
 
 func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCase, error) {
-	failed := make([]TestCase, len(testCases))
-	for i := 0; i < len(testCases); i++ {
-		// Spin up go routine to run case concurrently
-		// go s.RunContainer(dir, image, command, extension, string(testCases[i].Input))
+
+	type outcome struct {
+		passed bool
+		err    error
 	}
+
+	// One slot per test case. Every goroutine writes only to outcomes[i]
+	outcomes := make([]outcome, len(testCases))
+
+	var wg sync.WaitGroup
+
+	for i, tc := range testCases {
+		// Tell WaitGroup there is one more thing to wait for.
+		wg.Add(1)
+
+		go func(i int, tc TestCase) {
+			// Covers early returns as well, whenever we exit the function we are done with that routine.
+			defer wg.Done()
+			res, err := s.RunContainer(dir, image, command, extension, string(tc.Input))
+			if err != nil {
+				outcomes[i].err = err
+				return
+			}
+			// TODO: normalize both stdout and expectedoutput with helper function
+			outcomes[i].passed = !res.TimedOut && res.ExitCode == 0 && res.Stdout == tc.ExpectedOutput
+		}(i, tc)
+	}
+	// Block until every goroutine has called Done()
+	wg.Wait()
+
+	// TODO: Read outcomes and append to failed. Check if passed and if not append to failed. Return failed.
+
 	return failed, nil
 }
- 
+
 // Used to build the args depending on the language chosen. Takes the image string and extension for code file
 func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string) ([]string, string) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
-	args := []string {
+	args := []string{
 		"run",
 		"--rm",         // delete the container when it exits
-		"-i", // keep stdin open so test input reaches the program.
+		"-i",           // keep stdin open so test input reaches the program.
 		"--name", name, // we can kill it by name if need be
 		"--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
 		"--network", "none", // no network access
@@ -192,7 +220,7 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 		// allows exec, since thats where the compiled binary must run.
 		args = append(args, "--tmpfs", "/work:rw,exec,nosuid,size=64m")
 	}
-	args = append(args, image, command, "/code/code" + extension)
+	args = append(args, image, command, "/code/code"+extension)
 	return args, name
 }
 
@@ -220,8 +248,8 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 	var timedOut bool
 
 	// Read test cases input to stdin if we are running them.
-	if (input != "") {
-		cmd.Stdin = bytes.NewReader([]byte(input));
+	if input != "" {
+		cmd.Stdin = bytes.NewReader([]byte(input))
 	}
 
 	// Run the command.
@@ -240,8 +268,8 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 	}
 
 	return RunResult{
-		Stdout: stdout.String(),
-		Stderr: stderr.String(),
+		Stdout:   stdout.String(),
+		Stderr:   stderr.String(),
 		ExitCode: exitCode,
 		TimedOut: timedOut,
 	}, nil
