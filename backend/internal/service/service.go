@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -181,15 +182,24 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 				outcomes[i].err = err
 				return
 			}
-			// TODO: normalize both stdout and expectedoutput with helper function
-			outcomes[i].passed = !res.TimedOut && res.ExitCode == 0 && res.Stdout == tc.ExpectedOutput
+			outcomes[i].passed = !res.TimedOut &&
+								 res.ExitCode == 0 && 
+								 normalize(res.Stdout) == normalize(tc.ExpectedOutput)
 		}(i, tc)
 	}
 	// Block until every goroutine has called Done()
 	wg.Wait()
 
-	// TODO: Read outcomes and append to failed. Check if passed and if not append to failed. Return failed.
-
+	// Read outcomes and append to failed. Check if passed and if not append to failed. Return failed.
+	var failed []TestCase
+	for i, outcome := range outcomes {
+		if outcome.err != nil {
+			return nil, outcome.err
+		}
+		if !outcome.passed {
+			failed = append(failed, testCases[i])
+		}
+	}
 	return failed, nil
 }
 
@@ -273,4 +283,8 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 		ExitCode: exitCode,
 		TimedOut: timedOut,
 	}, nil
+}
+
+func normalize(s string) (string) {
+	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
 }
