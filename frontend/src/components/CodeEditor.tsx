@@ -33,21 +33,31 @@ export default function CodeEditor({ testCases }: CodeEditorProps) {
     const [showPanel, setShowPanel] = useState(false)
     const [tab, setTab] = useState<"results" | "analysis">("results")
     const [result, setResult] = useState<RunResult>()
+    const [processing, setProcessing] = useState(false)
 
     const handleRunClick = async () => {
-        const res = await fetch("/api/run", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: code, language: language }),
-        })
-        if (!res.ok) {
+        try {
+            setProcessing(true)
+            const res = await fetch("/api/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: code, language: language }),
+            })
+            if (!res.ok) {
+                console.error("Something went wrong with Run.")
+                return
+            }
+            const data = await res.json()
+            setResult(data)
+            setTab("results")
+            setShowPanel(true)
+        } catch (e) {
             console.error("Something went wrong with Run.")
             return
+        } finally {
+            setProcessing(false)
         }
-        const data = await res.json()
-        setResult(data)
-        setTab("results")
-        setShowPanel(true)
+        
     }
 
     const handleSubmitClick = async () => {
@@ -98,15 +108,17 @@ export default function CodeEditor({ testCases }: CodeEditorProps) {
                         <Button
                             variant="outline"
                             size="sm"
+                            disabled={processing}
                             onClick={handleRunClick}
                             className="cursor-pointer gap-2 border-zinc-700 bg-transparent text-zinc-200 hover:bg-zinc-800 hover:text-white"
                         >
                             <Play className="size-3.5" />
-                            Run
+                            {processing ? ("Running") : ("Run")}
                         </Button>
                         <Button
                             size="sm"
                             onClick={handleSubmitClick}
+                            disabled={processing}
                             className="cursor-pointer gap-2 bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
                         >
                             <Check className="size-3.5" />
