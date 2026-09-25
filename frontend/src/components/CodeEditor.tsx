@@ -27,6 +27,9 @@ const LANGUAGES = [
     { label: "C#", value: "csharp" },
 ]
 
+// TODO: Add "functionStub" or something similar to schema on a problem
+// Set default value to the functionStub for that problem.
+
 export default function CodeEditor({ testCases }: CodeEditorProps) {
     const [language, setLanguage] = useState("python")
     const [code, setCode] = useState("")
