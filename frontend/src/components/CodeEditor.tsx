@@ -200,7 +200,7 @@ export default function CodeEditor({ problem }: CodeEditorProps) {
                             </pre>
                         </div>
                         <div className={tab === "analysis" ? "" : "hidden"}>
-                            <CodeAnalysis code={code} />
+                           {problem && <CodeAnalysis code={code} />}
                         </div>
                     </div>
                 </div>

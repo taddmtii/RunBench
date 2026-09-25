@@ -169,14 +169,21 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 	outcomes := make([]outcome, len(testCases))
 
 	var wg sync.WaitGroup
+	const maxConcurrent = 5
+	semaphore := make(chan struct{}, maxConcurrent)
 
 	for i, tc := range testCases {
 		// Tell WaitGroup there is one more thing to wait for.
 		wg.Add(1)
+		// Take a slot and block here once maxConcurrent (5) are running
+		semaphore <- struct{}{}
 
 		go func(i int, tc TestCase) {
 			// Covers early returns as well, whenever we exit the function we are done with that routine.
 			defer wg.Done()
+			// Release the slot when this routine ends
+			defer func() { <- semaphore}()
+			
 			res, err := s.RunContainer(dir, image, command, extension, string(tc.Input))
 			if err != nil {
 				outcomes[i].err = err
