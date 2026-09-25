@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Editor } from "@monaco-editor/react"
 import { ChevronDown, Play, Check, X } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Button } from "./ui/button"
-import { TestCase } from "../../generated/prisma/client"
+import { Problem, TestCase } from "../../generated/prisma/client"
 import CodeAnalysis from "./CodeAnalysis"
 
 interface RunResult {
@@ -16,7 +16,7 @@ interface RunResult {
 }
 
 interface CodeEditorProps {
-    testCases: TestCase[]
+    problem: Problem
 }
 
 const LANGUAGES = [
@@ -27,16 +27,19 @@ const LANGUAGES = [
     { label: "C#", value: "csharp" },
 ]
 
-// TODO: Add "functionStub" or something similar to schema on a problem
-// Set default value to the functionStub for that problem.
 
-export default function CodeEditor({ testCases }: CodeEditorProps) {
+export default function CodeEditor({ problem }: CodeEditorProps) {
     const [language, setLanguage] = useState("python")
-    const [code, setCode] = useState("")
+    const [code, setCode] = useState( (problem?.functionStubs as Record<string, string>)?.["python"] ?? "")
     const [showPanel, setShowPanel] = useState(false)
     const [tab, setTab] = useState<"results" | "analysis">("results")
     const [result, setResult] = useState<RunResult>()
     const [processing, setProcessing] = useState(false)
+
+    useEffect(() => {
+    const stub = (problem?.functionStubs as Record<string, string>)?.[language] ?? ""
+    setCode(stub)
+    }, [language, problem])
 
     const handleRunClick = async () => {
         try {
@@ -67,7 +70,7 @@ export default function CodeEditor({ testCases }: CodeEditorProps) {
         const res = await fetch("/api/submit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: code, language: language, testCases: testCases }),
+            body: JSON.stringify({ code: code, language: language, testCases: problem.testCases }),
         })
         if (!res.ok) {
             console.error("Something went wrong with Submit.")
