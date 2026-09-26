@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { code, language, testCases } = body;
-  if (!code || !testCases || !language) {
+  const { code, language, functionName, testCases } = body;
+  if (!code || !testCases || !functionName || !language) {
     return NextResponse.json(
       { message: "There was a problem with the request" },
       { status: 400 },
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     },
     body: JSON.stringify({
       code: code,
+      functionName: functionName,
       language: language,
       testCases: testCases,
     }),

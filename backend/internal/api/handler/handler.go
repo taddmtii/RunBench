@@ -19,6 +19,7 @@ type RunRequest struct {
 type SubmitRequest struct {
 	Code string `json:"code"`
 	Language string `json:"language"`
+	FunctionName string `json:"functionName"`
 	TestCases []service.TestCase `json:"testCases"`
 }
 
@@ -30,11 +31,13 @@ type RunResult struct {
 }
 
 type SubmitResult struct {
-	Stdout   string `json:"stdout"`
-	Stderr   string `json:"stderr"`
-	ExitCode int    `json:"exitCode"`
-	TimedOut bool   `json:"timedOut"`
-	FailedTestCases []service.TestCase `json:"failedTestCases"`
+	Stdout      string                   `json:"stdout"`
+	Stderr      string                   `json:"stderr"`
+	ExitCode    int                      `json:"exitCode"`
+	TimedOut    bool                     `json:"timedOut"`
+	TotalCount  int                      `json:"totalCount"`
+	PassedCount int                      `json:"passedCount"`
+	Results     []service.TestCaseResult `json:"results"`
 }
 
 type Handler struct {
@@ -78,7 +81,7 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run the code and associated test cases.
-	res, err := h.svc.Submit(req.Code, req.Language, req.TestCases)
+	res, err := h.svc.Submit(req.Code, req.Language, req.FunctionName, req.TestCases)
 	if err != nil {
 		log.Printf("Submit failed: %v", err)
 		http.Error(w, "Execution failed", http.StatusInternalServerError)
@@ -87,11 +90,13 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(SubmitResult{
-		Stdout:   res.Stdout,
-		Stderr:   res.Stderr,
-		ExitCode: res.ExitCode,
-		TimedOut: res.TimedOut,
-		FailedTestCases: res.FailedTestCases,
+		Stdout:      res.Stdout,
+		Stderr:      res.Stderr,
+		ExitCode:    res.ExitCode,
+		TimedOut:    res.TimedOut,
+		TotalCount:  res.TotalCount,
+		PassedCount: res.PassedCount,
+		Results:     res.Results,
 	})
 }
 

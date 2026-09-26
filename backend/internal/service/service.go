@@ -15,6 +15,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type TestCaseResult struct {
+	Index    int    `json:"index"`
+	Passed   bool   `json:"passed"`
+	Input    string `json:"input"`
+	Expected string `json:"expected"`
+	Actual   string `json:"actual"`
+	Stderr   string `json:"stderr"`
+	TimedOut bool   `json:"timedOut"`
+}
+
 type TestCase struct {
 	Input          json.RawMessage `json:"input"`
 	ExpectedOutput string          `json:"expectedOutput"`
@@ -28,11 +38,13 @@ type RunResult struct {
 }
 
 type SubmitResult struct {
-	Stdout          string     `json:"stdout"`
-	Stderr          string     `json:"stderr"`
-	ExitCode        int        `json:"exitCode"`
-	TimedOut        bool       `json:"timedOut"`
-	FailedTestCases []TestCase `json:"failedTestCases"`
+	Stdout          string       `json:"stdout"`
+	Stderr          string       `json:"stderr"`
+	ExitCode        int          `json:"exitCode"`
+	TimedOut        bool         `json:"timedOut"`
+	TotalCount      int          `json:"totalCount"`
+	PassedCount     int          `json:"passedCount"`
+	Results 		[]TestCaseResult `json:"results"`
 }
 
 var fileExtensions = map[string]string{
@@ -52,7 +64,7 @@ func NewExecutionService() *ExecutionService {
 }
 
 // Creates temp sandbox directory containing code file to run.
-func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (string, string, error) {
+func (s *ExecutionService) CreateTempDirAndCodeFile(code string, langauge string) (string, string, error) {
 	extension := fileExtensions[langauge]
 
 	// Create new folder in the OS temp location. * is replaced by a random number.
@@ -77,12 +89,32 @@ func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (s
 		os.RemoveAll(dir)
 		return "", "", err
 	}
+
+	return dir, extension, nil
+}
+
+// Used by Submit to add onto CreateTempDirAndCodeFile. We want to additioanlly write the code
+// AND the driver file so that we can invoke the function serveral times with different inputs (args)
+func (s *ExecutionService) CreateTempDirAndDriver(code string, functionName string, language string) (string, string, error) {
+	dir, extension, err := s.CreateTempDirAndCodeFile(code, language)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Creates driver file with the code that we defined in pythonDriver since we are actually 
+	// running test cases when we submit.
+	err = os.WriteFile(filepath.Join(dir, "driver.py"), []byte(pythonDriver(functionName)), 0o644);
+	if err != nil {
+		os.RemoveAll(dir)
+		return "", "", err
+	}
+
 	return dir, extension, nil
 }
 
 // Prepares files and directory, and then calls runContainer with the code.
 func (s *ExecutionService) Run(code string, language string) (RunResult, error) {
-	dir, extension, err := s.CreateTempDirAndFile(code, language)
+	dir, extension, err := s.CreateTempDirAndCodeFile(code, language)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -105,11 +137,11 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 	case "csharp":
 		image, command = "csharp-sandbox", "run-csharp"
 	}
-	return s.RunContainer(dir, image, command, extension, "")
+	return s.RunContainer(dir, image, command, extension, "code"+extension ,"")
 }
 
-func (s *ExecutionService) Submit(code string, language string, testCases []TestCase) (SubmitResult, error) {
-	dir, extension, err := s.CreateTempDirAndFile(code, language)
+func (s *ExecutionService) Submit(code string, language string, functionName string, testCases []TestCase) (SubmitResult, error) {
+	dir, extension, err := s.CreateTempDirAndDriver(code, functionName, language)
 	if err != nil {
 		return SubmitResult{}, err
 	}
@@ -132,7 +164,7 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 	case "csharp":
 		image, command = "csharp-sandbox", "run-csharp"
 	}
-	runResult, err := s.RunContainer(dir, image, command, extension, "")
+	runResult, err := s.RunContainer(dir, image, command, extension, "code"+extension, "")
 	if err != nil {
 		return SubmitResult{
 			Stdout:   runResult.Stdout,
@@ -143,31 +175,39 @@ func (s *ExecutionService) Submit(code string, language string, testCases []Test
 	}
 	// Initial run is successful, run each test case
 	if runResult.ExitCode == 0 {
-		failed, err := s.RunTestCases(dir, image, command, extension, testCases)
+		results, err := s.RunTestCases(dir, image, command, extension, testCases)
 		if err != nil {
 			return SubmitResult{}, err
 		}
+		passedCount := 0
+		for _, r := range results {
+			if r.Passed {
+				passedCount++
+			}
+		}
 		return SubmitResult{
-			Stdout:          runResult.Stdout,
-			Stderr:          runResult.Stderr,
-			ExitCode:        runResult.ExitCode,
-			TimedOut:        runResult.TimedOut,
-			FailedTestCases: failed,
+			Stdout:      runResult.Stdout,
+			Stderr:      runResult.Stderr,
+			ExitCode:    runResult.ExitCode,
+			TimedOut:    runResult.TimedOut,
+			TotalCount:  len(testCases),
+			PassedCount: passedCount,
+			Results:     results,
 		}, nil
 	}
-	return SubmitResult{}, nil
+	return SubmitResult{
+		Stdout:   runResult.Stdout,
+		Stderr:   runResult.Stderr,
+		ExitCode: runResult.ExitCode,
+		TimedOut: runResult.TimedOut,
+	}, nil
 }
 
-func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCase, error) {
-
-	type outcome struct {
-		passed bool
-		err    error
-	}
+func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCaseResult, error) {
 
 	// One slot per test case. Every goroutine writes only to outcomes[i]
 	// Ensures thread safety.
-	outcomes := make([]outcome, len(testCases))
+	results := make([]TestCaseResult, len(testCases))
 
 	// Waits for all goroutines to finish before reading results
 	var wg sync.WaitGroup
@@ -186,34 +226,38 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 			// Release the slot when this routine ends
 			defer func() { <- semaphore}()
 
-			res, err := s.RunContainer(dir, image, command, extension, string(tc.Input))
+			res, err := s.RunContainer(dir, image, command, extension, "driver.py", string(tc.Input))
 			if err != nil {
-				outcomes[i].err = err
+				results[i] = TestCaseResult{
+					Index: i, 
+					Passed: false, 
+					Input: string(tc.Input), 
+					Expected: tc.ExpectedOutput, 
+					Stderr: err.Error(),
+				}
 				return
 			}
-			outcomes[i].passed = !res.TimedOut &&
-								 res.ExitCode == 0 && 
-								 normalize(res.Stdout) == normalize(tc.ExpectedOutput)
+			results[i] = TestCaseResult{
+				Index:    i,
+				Passed:   !res.TimedOut && res.ExitCode == 0 && normalize(res.Stdout) == normalize(tc.ExpectedOutput),
+				Input:    string(tc.Input),
+				Expected: tc.ExpectedOutput,
+				Actual:   res.Stdout,
+				Stderr:   res.Stderr,
+				TimedOut: res.TimedOut,
+			}
 		}(i, tc)
 	}
+
 	// Block until every goroutine has called Done()
 	wg.Wait()
 
-	// Read outcomes and append to failed. Check if passed and if not append to failed. Return failed.
-	var failed []TestCase
-	for i, outcome := range outcomes {
-		if outcome.err != nil {
-			return nil, outcome.err
-		}
-		if !outcome.passed {
-			failed = append(failed, testCases[i])
-		}
-	}
-	return failed, nil
+	return results, nil
 }
 
 // Used to build the args depending on the language chosen. Takes the image string and extension for code file
-func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string) ([]string, string) {
+// targetFile is the file inside /code that should actually be executed. code.py during a normal run, and driver.py on test cases.
+func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string, targetFile string) ([]string, string) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
 	args := []string{
@@ -239,13 +283,13 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 		// allows exec, since thats where the compiled binary must run.
 		args = append(args, "--tmpfs", "/work:rw,exec,nosuid,size=64m")
 	}
-	args = append(args, image, command, "/code/code"+extension)
+	args = append(args, image, command, "/code/" + targetFile)
 	return args, name
 }
 
 // Runs a container against a directory containing the file with code.
-func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string, input string) (RunResult, error) {
-	args, name := s.BuildDockerRunArgs(dir, image, command, extension)
+func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string, targetFile string, input string) (RunResult, error) {
+	args, name := s.BuildDockerRunArgs(dir, image, command, extension, targetFile)
 
 	// build timeout context ("timer object"). Cancels itself
 	// after 10 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
