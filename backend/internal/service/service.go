@@ -125,11 +125,11 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 	case "csharp":
 		image, command = "csharp-sandbox", "run-csharp"
 	}
-	return s.RunContainer(dir, image, command, extension, "")
+	return s.RunContainer(dir, image, command, extension, "code"+extension ,"")
 }
 
 func (s *ExecutionService) Submit(code string, language string, functionName string, testCases []TestCase) (SubmitResult, error) {
-	dir, extension, err := s.CreateTempDirAndFile(code, functionName, language)
+	dir, extension, err := s.CreateTempDirAndDriver(code, functionName, language)
 	if err != nil {
 		return SubmitResult{}, err
 	}
@@ -152,7 +152,7 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 	case "csharp":
 		image, command = "csharp-sandbox", "run-csharp"
 	}
-	runResult, err := s.RunContainer(dir, image, command, extension, "")
+	runResult, err := s.RunContainer(dir, image, command, extension, "code"+extension, "")
 	if err != nil {
 		return SubmitResult{
 			Stdout:   runResult.Stdout,
@@ -206,7 +206,7 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 			// Release the slot when this routine ends
 			defer func() { <- semaphore}()
 
-			res, err := s.RunContainer(dir, image, command, extension, string(tc.Input))
+			res, err := s.RunContainer(dir, image, command, extension, "driver.py", string(tc.Input))
 			if err != nil {
 				outcomes[i].err = err
 				return
@@ -233,7 +233,8 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 }
 
 // Used to build the args depending on the language chosen. Takes the image string and extension for code file
-func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string) ([]string, string) {
+// targetFile is the file inside /code that should actually be executed. code.py during a normal run, and driver.py on test cases.
+func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command string, extension string, targetFile string) ([]string, string) {
 	// build docker run command with isolation flags
 	name := "exec-" + uuid.NewString()
 	args := []string{
@@ -259,13 +260,13 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 		// allows exec, since thats where the compiled binary must run.
 		args = append(args, "--tmpfs", "/work:rw,exec,nosuid,size=64m")
 	}
-	args = append(args, image, command, "/code/code"+extension)
+	args = append(args, image, command, "/code/" + targetFile)
 	return args, name
 }
 
 // Runs a container against a directory containing the file with code.
-func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string, input string) (RunResult, error) {
-	args, name := s.BuildDockerRunArgs(dir, image, command, extension)
+func (s *ExecutionService) RunContainer(dir string, image string, command string, extension string, targetFile string, input string) (RunResult, error) {
+	args, name := s.BuildDockerRunArgs(dir, image, command, extension, targetFile)
 
 	// build timeout context ("timer object"). Cancels itself
 	// after 10 seconds (intended for duration of run command). Resources are rerelesaed if command finishes early.
