@@ -19,3 +19,30 @@ print(json.dumps(result))
 `, functionName, functionName, functionName)
 }
 
+
+func javascriptDriver(functionName string) string {
+	return fmt.Sprintf(`const { %s } = require("./code");
+
+let data = "";
+process.stdin.on("data", (chunk) => (data += chunk));
+process.stdin.on("end", () => {
+  const args = JSON.parse(data);
+  const result = Array.isArray(args) ? %s(...args) : %s(...Object.values(args));
+  console.log(JSON.stringify(result));
+});
+`, functionName, functionName, functionName)
+}
+
+func typescriptDriver(functionName string) string {
+	return fmt.Sprintf(`import { %s } from "./code";
+
+let data = "";
+process.stdin.on("data", (chunk) => (data += chunk));
+process.stdin.on("end", () => {
+  const args = JSON.parse(data);
+  const result = Array.isArray(args) ? (%s as any)(...args) : (%s as any)(...Object.values(args));
+  console.log(JSON.stringify(result));
+});
+`, functionName, functionName, functionName)
+}
+
