@@ -52,7 +52,7 @@ func NewExecutionService() *ExecutionService {
 }
 
 // Creates temp sandbox directory containing code file to run.
-func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (string, string, error) {
+func (s *ExecutionService) CreateTempDirAndCodeFile(code string, langauge string) (string, string, error) {
 	extension := fileExtensions[langauge]
 
 	// Create new folder in the OS temp location. * is replaced by a random number.
@@ -77,12 +77,32 @@ func (s *ExecutionService) CreateTempDirAndFile(code string, langauge string) (s
 		os.RemoveAll(dir)
 		return "", "", err
 	}
+
+	return dir, extension, nil
+}
+
+// Used by Submit to add onto CreateTempDirAndCodeFile. We want to additioanlly write the code
+// AND the driver file so that we can invoke the function serveral times with different inputs (args)
+func (s *ExecutionService) CreateTempDirAndDriver(code string, functionName string, language string) (string, string, error) {
+	dir, extension, err := s.CreateTempDirAndCodeFile(code, language)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Creates driver file with the code that we defined in pythonDriver since we are actually 
+	// running test cases when we submit.
+	err = os.WriteFile(filepath.Join(dir, "driver.py"), []byte(pythonDriver(functionName)), 0o644);
+	if err != nil {
+		os.RemoveAll(dir)
+		return "", "", err
+	}
+
 	return dir, extension, nil
 }
 
 // Prepares files and directory, and then calls runContainer with the code.
 func (s *ExecutionService) Run(code string, language string) (RunResult, error) {
-	dir, extension, err := s.CreateTempDirAndFile(code, language)
+	dir, extension, err := s.CreateTempDirAndCodeFile(code, language)
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -108,8 +128,8 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 	return s.RunContainer(dir, image, command, extension, "")
 }
 
-func (s *ExecutionService) Submit(code string, language string, testCases []TestCase) (SubmitResult, error) {
-	dir, extension, err := s.CreateTempDirAndFile(code, language)
+func (s *ExecutionService) Submit(code string, language string, functionName string, testCases []TestCase) (SubmitResult, error) {
+	dir, extension, err := s.CreateTempDirAndFile(code, functionName, language)
 	if err != nil {
 		return SubmitResult{}, err
 	}
