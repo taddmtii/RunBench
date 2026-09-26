@@ -7,12 +7,15 @@ import "fmt"
 // decodes it as real python data and invokes the function using
 // those arguments.
 func pythonDriver(functionName string) string {
-	return fmt.Sprintf(`
-	import json, sys
-	from code import %s
-	
-	args = json.loads(sys.stdin.read())
+	return fmt.Sprintf(`import json, sys
+from code import %s
+
+args = json.loads(sys.stdin.read())
+if isinstance(args, dict):
+	result = %s(**args)
+else:
 	result = %s(*args)
-	print(json.dump(result))
-	`, functionName, functionName)
+print(json.dumps(result))
+`, functionName, functionName, functionName)
 }
+

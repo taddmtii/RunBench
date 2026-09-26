@@ -8,13 +8,24 @@ import { Button } from "./ui/button"
 import { Problem, TestCase } from "../../generated/prisma/client"
 import CodeAnalysis from "./CodeAnalysis"
 
+// Used for both run and submit. optional fields are populated by submit only.
 interface RunResult {
-    stdout: string,
-    stderr: string,
-    exitCode: number,
+    stdout: string
+    stderr: string
+    exitCode: number
     timedOut: boolean
+    totalCount?: number
+    passedCount?: number
+    results?: {
+        index: number
+        passed: boolean
+        input: string
+        expected: string
+        actual: string
+        stderr: string
+        timedOut: boolean
+    }[]
 }
-
 interface CodeEditorProps {
     problem: Problem
 }
@@ -195,9 +206,64 @@ export default function CodeEditor({ problem }: CodeEditorProps) {
 
                     <div className="min-h-0 flex-1 overflow-y-auto p-3 text-sm text-zinc-200">
                         <div className={tab === "results" ? "" : "hidden"}>
-                            <pre className="whitespace-pre-wrap font-mono text-xs">
-                                {JSON.stringify(result?.stdout)}
-                            </pre>
+                            {result?.results ? (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-zinc-200">
+                                        {result.passedCount}/{result.totalCount} test cases passed
+                                    </p>
+                                    {result.results.map((r) => (
+                                        <div
+                                            key={r.index}
+                                            className={`rounded border p-2 text-xs ${
+                                                r.passed
+                                                    ? "border-emerald-800 bg-emerald-950/30"
+                                                    : "border-red-800 bg-red-950/30"
+                                            }`}
+                                        >
+                                            <p className={`mb-1 font-medium ${r.passed ? "text-emerald-400" : "text-red-400"}`}>
+                                                Test case {r.index + 1}: {r.passed ? "Passed" : "Failed"}
+                                            </p>
+                                            <p className="text-zinc-300">
+                                                <span className="text-zinc-500">Input: </span>{r.input}
+                                            </p>
+                                            <p className="text-zinc-300">
+                                                <span className="text-zinc-500">Expected: </span>{r.expected}
+                                            </p>
+                                            <p className="text-zinc-300">
+                                                <span className="text-zinc-500">Actual: </span>{r.actual}
+                                            </p>
+                                            {r.timedOut && <p className="mt-1 text-yellow-400">Timed out</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : result ? (
+                                <div className="space-y-2">
+                                    <p className={`text-sm font-medium ${result.exitCode === 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                        {result.exitCode === 0 ? "Code ran successfully!" : "Code could not run."}
+                                    </p>
+                                    {result.stdout && (
+                                        <div>
+                                            <p className="mb-1 text-xs text-zinc-500">Stdout</p>
+                                            <pre className="whitespace-pre-wrap rounded bg-black/30 p-2 font-mono text-xs text-zinc-200">
+                                                {result.stdout}
+                                            </pre>
+                                        </div>
+                                    )}
+                                    {result.stderr && (
+                                        <div>
+                                            <p className="mb-1 text-xs text-zinc-500">Stderr</p>
+                                            <pre className="whitespace-pre-wrap rounded bg-black/30 p-2 font-mono text-xs text-red-400">
+                                                {result.stderr}
+                                            </pre>
+                                        </div>
+                                    )}
+                                    {result.timedOut && (
+                                        <p className="text-xs text-yellow-400">Timed out.</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-zinc-500">Run your code to see output here.</p>
+                            )}
                         </div>
                         <div className={tab === "analysis" ? "" : "hidden"}>
                            {problem && <CodeAnalysis code={code} />}
