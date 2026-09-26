@@ -31,11 +31,13 @@ type RunResult struct {
 }
 
 type SubmitResult struct {
-	Stdout   string `json:"stdout"`
-	Stderr   string `json:"stderr"`
-	ExitCode int    `json:"exitCode"`
-	TimedOut bool   `json:"timedOut"`
-	FailedTestCases []service.TestCase `json:"failedTestCases"`
+	Stdout      string                   `json:"stdout"`
+	Stderr      string                   `json:"stderr"`
+	ExitCode    int                      `json:"exitCode"`
+	TimedOut    bool                     `json:"timedOut"`
+	TotalCount  int                      `json:"totalCount"`
+	PassedCount int                      `json:"passedCount"`
+	Results     []service.TestCaseResult `json:"results"`
 }
 
 type Handler struct {
@@ -88,11 +90,13 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(SubmitResult{
-		Stdout:   res.Stdout,
-		Stderr:   res.Stderr,
-		ExitCode: res.ExitCode,
-		TimedOut: res.TimedOut,
-		FailedTestCases: res.FailedTestCases,
+		Stdout:      res.Stdout,
+		Stderr:      res.Stderr,
+		ExitCode:    res.ExitCode,
+		TimedOut:    res.TimedOut,
+		TotalCount:  res.TotalCount,
+		PassedCount: res.PassedCount,
+		Results:     res.Results,
 	})
 }
 
