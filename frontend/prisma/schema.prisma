@@ -51,6 +51,7 @@ model Problem {
   recommendedTimeComplexity  String          @default("")
   recommendedSpaceComplexity String          @default("")
   functionStubs              Json            @default("{}")
+  functionName               String          @default("")
   createdAt                  DateTime        @default(now())
   updatedAt                  DateTime        @updatedAt
   examples                   ProblemExample[]

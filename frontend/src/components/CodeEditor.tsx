@@ -70,7 +70,7 @@ export default function CodeEditor({ problem }: CodeEditorProps) {
         const res = await fetch("/api/submit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: code, language: language, testCases: problem.testCases }),
+            body: JSON.stringify({ code: code, language: language, functionName: problem.functionName, testCases: problem.testCases }),
         })
         if (!res.ok) {
             console.error("Something went wrong with Submit.")
