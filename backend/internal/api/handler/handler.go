@@ -19,6 +19,7 @@ type RunRequest struct {
 type SubmitRequest struct {
 	Code string `json:"code"`
 	Language string `json:"language"`
+	FunctionName string `json:"functionName"`
 	TestCases []service.TestCase `json:"testCases"`
 }
 
@@ -78,7 +79,7 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run the code and associated test cases.
-	res, err := h.svc.Submit(req.Code, req.Language, req.TestCases)
+	res, err := h.svc.Submit(req.Code, req.Language, req.FunctionName, req.TestCases)
 	if err != nil {
 		log.Printf("Submit failed: %v", err)
 		http.Error(w, "Execution failed", http.StatusInternalServerError)
