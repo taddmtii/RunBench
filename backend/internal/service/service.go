@@ -15,6 +15,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type TestCaseResult struct {
+	Index    int    `json:"index"`
+	Passed   bool   `json:"passed"`
+	Input    string `json:"input"`
+	Expected string `json:"expected"`
+	Actual   string `json:"actual"`
+	Stderr   string `json:"stderr"`
+	TimedOut bool   `json:"timedOut"`
+}
+
 type TestCase struct {
 	Input          json.RawMessage `json:"input"`
 	ExpectedOutput string          `json:"expectedOutput"`
@@ -28,11 +38,13 @@ type RunResult struct {
 }
 
 type SubmitResult struct {
-	Stdout          string     `json:"stdout"`
-	Stderr          string     `json:"stderr"`
-	ExitCode        int        `json:"exitCode"`
-	TimedOut        bool       `json:"timedOut"`
-	FailedTestCases []TestCase `json:"failedTestCases"`
+	Stdout          string       `json:"stdout"`
+	Stderr          string       `json:"stderr"`
+	ExitCode        int          `json:"exitCode"`
+	TimedOut        bool         `json:"timedOut"`
+	TotalCount      int          `json:"totalCount"`
+	PassedCount     int          `json:"passedCount"`
+	Results 		[]TestCaseResult `json:"results"`
 }
 
 var fileExtensions = map[string]string{
@@ -163,31 +175,39 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 	}
 	// Initial run is successful, run each test case
 	if runResult.ExitCode == 0 {
-		failed, err := s.RunTestCases(dir, image, command, extension, testCases)
+		results, err := s.RunTestCases(dir, image, command, extension, testCases)
 		if err != nil {
 			return SubmitResult{}, err
 		}
+		passedCount := 0
+		for _, r := range results {
+			if r.Passed {
+				passedCount++
+			}
+		}
 		return SubmitResult{
-			Stdout:          runResult.Stdout,
-			Stderr:          runResult.Stderr,
-			ExitCode:        runResult.ExitCode,
-			TimedOut:        runResult.TimedOut,
-			FailedTestCases: failed,
+			Stdout:      runResult.Stdout,
+			Stderr:      runResult.Stderr,
+			ExitCode:    runResult.ExitCode,
+			TimedOut:    runResult.TimedOut,
+			TotalCount:  len(testCases),
+			PassedCount: passedCount,
+			Results:     results,
 		}, nil
 	}
-	return SubmitResult{}, nil
+	return SubmitResult{
+		Stdout:   runResult.Stdout,
+		Stderr:   runResult.Stderr,
+		ExitCode: runResult.ExitCode,
+		TimedOut: runResult.TimedOut,
+	}, nil
 }
 
-func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCase, error) {
-
-	type outcome struct {
-		passed bool
-		err    error
-	}
+func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCaseResult, error) {
 
 	// One slot per test case. Every goroutine writes only to outcomes[i]
 	// Ensures thread safety.
-	outcomes := make([]outcome, len(testCases))
+	results := make([]TestCaseResult, len(testCases))
 
 	// Waits for all goroutines to finish before reading results
 	var wg sync.WaitGroup
@@ -208,28 +228,25 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 
 			res, err := s.RunContainer(dir, image, command, extension, "driver.py", string(tc.Input))
 			if err != nil {
-				outcomes[i].err = err
+				results[i] = TestCaseResult{Index: i, Passed: false, Input: string(tc.Input), Expected: tc.ExpectedOutput, Stderr: err.Error()}
 				return
 			}
-			outcomes[i].passed = !res.TimedOut &&
-								 res.ExitCode == 0 && 
-								 normalize(res.Stdout) == normalize(tc.ExpectedOutput)
+			results[i] = TestCaseResult{
+				Index:    i,
+				Passed:   !res.TimedOut && res.ExitCode == 0 && normalize(res.Stdout) == normalize(tc.ExpectedOutput),
+				Input:    string(tc.Input),
+				Expected: tc.ExpectedOutput,
+				Actual:   res.Stdout,
+				Stderr:   res.Stderr,
+				TimedOut: res.TimedOut,
+			}
 		}(i, tc)
 	}
+
 	// Block until every goroutine has called Done()
 	wg.Wait()
 
-	// Read outcomes and append to failed. Check if passed and if not append to failed. Return failed.
-	var failed []TestCase
-	for i, outcome := range outcomes {
-		if outcome.err != nil {
-			return nil, outcome.err
-		}
-		if !outcome.passed {
-			failed = append(failed, testCases[i])
-		}
-	}
-	return failed, nil
+	return results, nil
 }
 
 // Used to build the args depending on the language chosen. Takes the image string and extension for code file
