@@ -24,3 +24,18 @@ https://en.wikipedia.org/wiki/Daemon_(computing)
 4. Channels
    - Pipe for passing values between goroutines.
    - Buffered channel as a semaphore to cap how many containers run at once
+
+Function Execution:
+
+Problem: User submits code and runs the entire program. It reads from stdin and executes the program but we need the user to just write a function.
+
+Potential solution:
+
+Since users file has no code taht reads stdin or calls their function, something has to...
+
+1.  Load the usrs function into memory
+2.  Get test cases input into a form the function can accept as arguments
+3.  Call function
+4.  Print return value somewhere (stdout)
+
+Driver: small file we can generate that acts as a wrapper program whose only job is bridging the gap between test case data as text and function call with arguments.

@@ -166,8 +166,10 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 	}
 
 	// One slot per test case. Every goroutine writes only to outcomes[i]
+	// Ensures thread safety.
 	outcomes := make([]outcome, len(testCases))
 
+	// Waits for all goroutines to finish before reading results
 	var wg sync.WaitGroup
 	const maxConcurrent = 5
 	semaphore := make(chan struct{}, maxConcurrent)
@@ -183,7 +185,7 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 			defer wg.Done()
 			// Release the slot when this routine ends
 			defer func() { <- semaphore}()
-			
+
 			res, err := s.RunContainer(dir, image, command, extension, string(tc.Input))
 			if err != nil {
 				outcomes[i].err = err
