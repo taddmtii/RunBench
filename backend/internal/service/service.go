@@ -228,7 +228,13 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 
 			res, err := s.RunContainer(dir, image, command, extension, "driver.py", string(tc.Input))
 			if err != nil {
-				results[i] = TestCaseResult{Index: i, Passed: false, Input: string(tc.Input), Expected: tc.ExpectedOutput, Stderr: err.Error()}
+				results[i] = TestCaseResult{
+					Index: i, 
+					Passed: false, 
+					Input: string(tc.Input), 
+					Expected: tc.ExpectedOutput, 
+					Stderr: err.Error(),
+				}
 				return
 			}
 			results[i] = TestCaseResult{
