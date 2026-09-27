@@ -232,6 +232,9 @@ export default function CodeEditor({ problem }: CodeEditorProps) {
                                             <p className="text-zinc-300">
                                                 <span className="text-zinc-500">Actual: </span>{r.actual}
                                             </p>
+                                            {r.stderr && (
+                                                <pre className="mt-1 whitespace-pre-wrap text-red-400">{r.stderr}</pre>
+                                            )}
                                             {r.timedOut && <p className="mt-1 text-yellow-400">Timed out</p>}
                                         </div>
                                     ))}

@@ -93,23 +93,22 @@ func (s *ExecutionService) CreateTempDirAndCodeFile(code string, langauge string
 	return dir, extension, nil
 }
 
-// Used by Submit to add onto CreateTempDirAndCodeFile. We want to additioanlly write the code
-// AND the driver file so that we can invoke the function serveral times with different inputs (args)
-func (s *ExecutionService) CreateTempDirAndDriver(code string, functionName string, language string) (string, string, error) {
+// Used by Submit to add onto CreateTempDirAndCodeFile. We want to additionally write the code
+// AND the driver file so that we can invoke the function several times with different inputs (args)
+func (s *ExecutionService) CreateTempDirAndDriver(code string, functionName string, language string) (string, string, string, error) {
 	dir, extension, err := s.CreateTempDirAndCodeFile(code, language)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	// Creates driver file with the code that we defined in pythonDriver since we are actually 
-	// running test cases when we submit.
-	err = os.WriteFile(filepath.Join(dir, "driver.py"), []byte(pythonDriver(functionName)), 0o644);
+	driverFile := "driver" + extension
+	err = os.WriteFile(filepath.Join(dir, driverFile), []byte(drivers[language](functionName)), 0o644)
 	if err != nil {
 		os.RemoveAll(dir)
-		return "", "", err
+		return "", "", "", err
 	}
 
-	return dir, extension, nil
+	return dir, extension, driverFile, nil
 }
 
 // Prepares files and directory, and then calls runContainer with the code.
@@ -141,7 +140,7 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 }
 
 func (s *ExecutionService) Submit(code string, language string, functionName string, testCases []TestCase) (SubmitResult, error) {
-	dir, extension, err := s.CreateTempDirAndDriver(code, functionName, language)
+	dir, extension, driverFile, err := s.CreateTempDirAndDriver(code, functionName, language)
 	if err != nil {
 		return SubmitResult{}, err
 	}
@@ -175,7 +174,7 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 	}
 	// Initial run is successful, run each test case
 	if runResult.ExitCode == 0 {
-		results, err := s.RunTestCases(dir, image, command, extension, testCases)
+		results, err := s.RunTestCases(dir, image, command, extension, driverFile, testCases)
 		if err != nil {
 			return SubmitResult{}, err
 		}
@@ -203,7 +202,7 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 	}, nil
 }
 
-func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCaseResult, error) {
+func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, driverFile string, testCases []TestCase) ([]TestCaseResult, error) {
 
 	// One slot per test case. Every goroutine writes only to outcomes[i]
 	// Ensures thread safety.
@@ -226,7 +225,7 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 			// Release the slot when this routine ends
 			defer func() { <- semaphore}()
 
-			res, err := s.RunContainer(dir, image, command, extension, "driver.py", string(tc.Input))
+			res, err := s.RunContainer(dir, image, command, extension, driverFile, string(tc.Input))
 			if err != nil {
 				results[i] = TestCaseResult{
 					Index: i, 
