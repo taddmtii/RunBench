@@ -33,7 +33,7 @@ Return only valid JSON with this shape:
   ]
 }
 
-Generate 8 varied test cases, including edge cases. Do not include solutions or markdown.`,
+Generate as many varied test cases as possible, including edge cases. Do not include solutions or markdown.`,
   });
 
   const raw = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
