@@ -38,21 +38,19 @@ type RunResult struct {
 }
 
 type SubmitResult struct {
-	Stdout          string       `json:"stdout"`
-	Stderr          string       `json:"stderr"`
-	ExitCode        int          `json:"exitCode"`
-	TimedOut        bool         `json:"timedOut"`
-	TotalCount      int          `json:"totalCount"`
-	PassedCount     int          `json:"passedCount"`
-	Results 		[]TestCaseResult `json:"results"`
+	Stdout      string           `json:"stdout"`
+	Stderr      string           `json:"stderr"`
+	ExitCode    int              `json:"exitCode"`
+	TimedOut    bool             `json:"timedOut"`
+	TotalCount  int              `json:"totalCount"`
+	PassedCount int              `json:"passedCount"`
+	Results     []TestCaseResult `json:"results"`
 }
 
 var fileExtensions = map[string]string{
 	"python":     ".py",
 	"typescript": ".ts",
 	"javascript": ".js",
-	"csharp":     ".cs",
-	"cpp":        ".cpp",
 }
 
 // Exists jsut so we can put methods on it like RunPython
@@ -93,23 +91,22 @@ func (s *ExecutionService) CreateTempDirAndCodeFile(code string, langauge string
 	return dir, extension, nil
 }
 
-// Used by Submit to add onto CreateTempDirAndCodeFile. We want to additioanlly write the code
-// AND the driver file so that we can invoke the function serveral times with different inputs (args)
-func (s *ExecutionService) CreateTempDirAndDriver(code string, functionName string, language string) (string, string, error) {
+// Used by Submit to add onto CreateTempDirAndCodeFile. We want to additionally write the code
+// AND the driver file so that we can invoke the function several times with different inputs (args)
+func (s *ExecutionService) CreateTempDirAndDriver(code string, functionName string, language string) (string, string, string, error) {
 	dir, extension, err := s.CreateTempDirAndCodeFile(code, language)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	// Creates driver file with the code that we defined in pythonDriver since we are actually 
-	// running test cases when we submit.
-	err = os.WriteFile(filepath.Join(dir, "driver.py"), []byte(pythonDriver(functionName)), 0o644);
+	driverFile := "driver" + extension
+	err = os.WriteFile(filepath.Join(dir, driverFile), []byte(drivers[language](functionName)), 0o644)
 	if err != nil {
 		os.RemoveAll(dir)
-		return "", "", err
+		return "", "", "", err
 	}
 
-	return dir, extension, nil
+	return dir, extension, driverFile, nil
 }
 
 // Prepares files and directory, and then calls runContainer with the code.
@@ -132,16 +129,12 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 		image, command = "typescript-sandbox", "tsx"
 	case "javascript":
 		image, command = "javascript-sandbox", "node"
-	case "cpp":
-		image, command = "cpp-sandbox", "run-cpp"
-	case "csharp":
-		image, command = "csharp-sandbox", "run-csharp"
 	}
-	return s.RunContainer(dir, image, command, extension, "code"+extension ,"")
+	return s.RunContainer(dir, image, command, extension, "code"+extension, "")
 }
 
 func (s *ExecutionService) Submit(code string, language string, functionName string, testCases []TestCase) (SubmitResult, error) {
-	dir, extension, err := s.CreateTempDirAndDriver(code, functionName, language)
+	dir, extension, driverFile, err := s.CreateTempDirAndDriver(code, functionName, language)
 	if err != nil {
 		return SubmitResult{}, err
 	}
@@ -159,10 +152,6 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 		image, command = "typescript-sandbox", "tsx"
 	case "javascript":
 		image, command = "javascript-sandbox", "node"
-	case "cpp":
-		image, command = "cpp-sandbox", "run-cpp"
-	case "csharp":
-		image, command = "csharp-sandbox", "run-csharp"
 	}
 	runResult, err := s.RunContainer(dir, image, command, extension, "code"+extension, "")
 	if err != nil {
@@ -175,7 +164,7 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 	}
 	// Initial run is successful, run each test case
 	if runResult.ExitCode == 0 {
-		results, err := s.RunTestCases(dir, image, command, extension, testCases)
+		results, err := s.RunTestCases(dir, image, command, extension, driverFile, testCases)
 		if err != nil {
 			return SubmitResult{}, err
 		}
@@ -203,7 +192,7 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 	}, nil
 }
 
-func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, testCases []TestCase) ([]TestCaseResult, error) {
+func (s *ExecutionService) RunTestCases(dir string, image string, command string, extension string, driverFile string, testCases []TestCase) ([]TestCaseResult, error) {
 
 	// One slot per test case. Every goroutine writes only to outcomes[i]
 	// Ensures thread safety.
@@ -224,16 +213,16 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 			// Covers early returns as well, whenever we exit the function we are done with that routine.
 			defer wg.Done()
 			// Release the slot when this routine ends
-			defer func() { <- semaphore}()
+			defer func() { <-semaphore }()
 
-			res, err := s.RunContainer(dir, image, command, extension, "driver.py", string(tc.Input))
+			res, err := s.RunContainer(dir, image, command, extension, driverFile, string(tc.Input))
 			if err != nil {
 				results[i] = TestCaseResult{
-					Index: i, 
-					Passed: false, 
-					Input: string(tc.Input), 
-					Expected: tc.ExpectedOutput, 
-					Stderr: err.Error(),
+					Index:    i,
+					Passed:   false,
+					Input:    string(tc.Input),
+					Expected: tc.ExpectedOutput,
+					Stderr:   err.Error(),
 				}
 				return
 			}
@@ -277,13 +266,7 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 		"--user", "1000:1000", // matches the UID set in docker container.
 		"-v", dir + ":/code:ro", // mount temp dir, read-only
 	}
-	// Conditional flags before image and command for running file.
-	if extension == ".cpp" || extension == ".cs" {
-		// CPP + CS dockerfile has a special temp filesystem called work that
-		// allows exec, since thats where the compiled binary must run.
-		args = append(args, "--tmpfs", "/work:rw,exec,nosuid,size=64m")
-	}
-	args = append(args, image, command, "/code/" + targetFile)
+	args = append(args, image, command, "/code/"+targetFile)
 	return args, name
 }
 
@@ -338,6 +321,6 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 	}, nil
 }
 
-func normalize(s string) (string) {
+func normalize(s string) string {
 	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
 }

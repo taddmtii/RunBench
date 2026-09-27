@@ -2,6 +2,12 @@ package service
 
 import "fmt"
 
+var drivers = map[string]func(functionName string) string{
+	"python":     pythonDriver,
+	"javascript": javascriptDriver,
+	"typescript": typescriptDriver,
+}
+
 // Builds a small python script that imports a function by name from a file
 // (code.py that we generate with the user code), reads stdin (test case input),
 // decodes it as real python data and invokes the function using
@@ -19,30 +25,22 @@ print(json.dumps(result))
 `, functionName, functionName, functionName)
 }
 
-
 func javascriptDriver(functionName string) string {
 	return fmt.Sprintf(`const { %s } = require("./code");
+const fs = require("fs");
 
-let data = "";
-process.stdin.on("data", (chunk) => (data += chunk));
-process.stdin.on("end", () => {
-  const args = JSON.parse(data);
-  const result = Array.isArray(args) ? %s(...args) : %s(...Object.values(args));
-  console.log(JSON.stringify(result));
-});
+const args = JSON.parse(fs.readFileSync(0, "utf8"));
+const result = Array.isArray(args) ? %s(...args) : %s(...Object.values(args));
+console.log(JSON.stringify(result));
 `, functionName, functionName, functionName)
 }
 
 func typescriptDriver(functionName string) string {
-	return fmt.Sprintf(`import { %s } from "./code";
+	return fmt.Sprintf(`import { readFileSync } from "fs";
+import { %s } from "./code";
 
-let data = "";
-process.stdin.on("data", (chunk) => (data += chunk));
-process.stdin.on("end", () => {
-  const args = JSON.parse(data);
-  const result = Array.isArray(args) ? (%s as any)(...args) : (%s as any)(...Object.values(args));
-  console.log(JSON.stringify(result));
-});
+const args = JSON.parse(readFileSync(0, "utf8"));
+const result = Array.isArray(args) ? (%s as any)(...args) : (%s as any)(...Object.values(args));
+console.log(JSON.stringify(result));
 `, functionName, functionName, functionName)
 }
-
