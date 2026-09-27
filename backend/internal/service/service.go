@@ -38,21 +38,19 @@ type RunResult struct {
 }
 
 type SubmitResult struct {
-	Stdout          string       `json:"stdout"`
-	Stderr          string       `json:"stderr"`
-	ExitCode        int          `json:"exitCode"`
-	TimedOut        bool         `json:"timedOut"`
-	TotalCount      int          `json:"totalCount"`
-	PassedCount     int          `json:"passedCount"`
-	Results 		[]TestCaseResult `json:"results"`
+	Stdout      string           `json:"stdout"`
+	Stderr      string           `json:"stderr"`
+	ExitCode    int              `json:"exitCode"`
+	TimedOut    bool             `json:"timedOut"`
+	TotalCount  int              `json:"totalCount"`
+	PassedCount int              `json:"passedCount"`
+	Results     []TestCaseResult `json:"results"`
 }
 
 var fileExtensions = map[string]string{
 	"python":     ".py",
 	"typescript": ".ts",
 	"javascript": ".js",
-	"csharp":     ".cs",
-	"cpp":        ".cpp",
 }
 
 // Exists jsut so we can put methods on it like RunPython
@@ -131,12 +129,8 @@ func (s *ExecutionService) Run(code string, language string) (RunResult, error) 
 		image, command = "typescript-sandbox", "tsx"
 	case "javascript":
 		image, command = "javascript-sandbox", "node"
-	case "cpp":
-		image, command = "cpp-sandbox", "run-cpp"
-	case "csharp":
-		image, command = "csharp-sandbox", "run-csharp"
 	}
-	return s.RunContainer(dir, image, command, extension, "code"+extension ,"")
+	return s.RunContainer(dir, image, command, extension, "code"+extension, "")
 }
 
 func (s *ExecutionService) Submit(code string, language string, functionName string, testCases []TestCase) (SubmitResult, error) {
@@ -158,10 +152,6 @@ func (s *ExecutionService) Submit(code string, language string, functionName str
 		image, command = "typescript-sandbox", "tsx"
 	case "javascript":
 		image, command = "javascript-sandbox", "node"
-	case "cpp":
-		image, command = "cpp-sandbox", "run-cpp"
-	case "csharp":
-		image, command = "csharp-sandbox", "run-csharp"
 	}
 	runResult, err := s.RunContainer(dir, image, command, extension, "code"+extension, "")
 	if err != nil {
@@ -223,16 +213,16 @@ func (s *ExecutionService) RunTestCases(dir string, image string, command string
 			// Covers early returns as well, whenever we exit the function we are done with that routine.
 			defer wg.Done()
 			// Release the slot when this routine ends
-			defer func() { <- semaphore}()
+			defer func() { <-semaphore }()
 
 			res, err := s.RunContainer(dir, image, command, extension, driverFile, string(tc.Input))
 			if err != nil {
 				results[i] = TestCaseResult{
-					Index: i, 
-					Passed: false, 
-					Input: string(tc.Input), 
-					Expected: tc.ExpectedOutput, 
-					Stderr: err.Error(),
+					Index:    i,
+					Passed:   false,
+					Input:    string(tc.Input),
+					Expected: tc.ExpectedOutput,
+					Stderr:   err.Error(),
 				}
 				return
 			}
@@ -276,13 +266,7 @@ func (s *ExecutionService) BuildDockerRunArgs(dir string, image string, command 
 		"--user", "1000:1000", // matches the UID set in docker container.
 		"-v", dir + ":/code:ro", // mount temp dir, read-only
 	}
-	// Conditional flags before image and command for running file.
-	if extension == ".cpp" || extension == ".cs" {
-		// CPP + CS dockerfile has a special temp filesystem called work that
-		// allows exec, since thats where the compiled binary must run.
-		args = append(args, "--tmpfs", "/work:rw,exec,nosuid,size=64m")
-	}
-	args = append(args, image, command, "/code/" + targetFile)
+	args = append(args, image, command, "/code/"+targetFile)
 	return args, name
 }
 
@@ -337,6 +321,6 @@ func (s *ExecutionService) RunContainer(dir string, image string, command string
 	}, nil
 }
 
-func normalize(s string) (string) {
+func normalize(s string) string {
 	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
 }

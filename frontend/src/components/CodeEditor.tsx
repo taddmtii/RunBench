@@ -34,8 +34,6 @@ const LANGUAGES = [
     { label: "Python", value: "python" },
     { label: "TypeScript", value: "typescript" },
     { label: "JavaScript", value: "javascript" },
-    { label: "C++", value: "cpp" },
-    { label: "C#", value: "csharp" },
 ]
 
 
