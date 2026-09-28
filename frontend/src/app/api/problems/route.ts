@@ -23,6 +23,12 @@ export async function POST(request: NextRequest) {
       recommendedSpaceComplexity: body.recommendedSpaceComplexity,
       functionName: body.functionName,
       functionStubs: body.functionStubs,
+      examples: {
+        create: (body.examples ?? []).map((example: { input: string; output: string; explanation?: string }, order: number) => ({
+          ...example,
+          order,
+        })),
+      },
       testCases: {
         create: body.testCases.map((testCase: { input: unknown; expectedOutput: string }) => ({
           input: testCase.input as Prisma.InputJsonValue,

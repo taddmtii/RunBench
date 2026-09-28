@@ -11,6 +11,7 @@ interface GeneratedProblem {
   topic: string;
   recommendedTimeComplexity: string;
   recommendedSpaceComplexity: string;
+  examples: { input: string; output: string; explanation?: string }[];
   functionName: string;
   functionStubs: Record<string, string>;
   testCases: { input: string; expectedOutput: string }[];
