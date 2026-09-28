@@ -22,6 +22,9 @@ Return only valid JSON with this shape:
   "topic": "string",
   "recommendedTimeComplexity": "string",
   "recommendedSpaceComplexity": "string",
+  "examples": [
+    { "input": "human-readable input", "output": "human-readable output", "explanation": "brief explanation" }
+  ],
   "functionName": "snake_case name used by the runner",
   "functionStubs": {
     "python": "functionName as a snake_case Python function with a # Enter code here comment and pass",
@@ -33,7 +36,7 @@ Return only valid JSON with this shape:
   ]
 }
 
-Generate as many varied test cases as possible, including edge cases. Do not include solutions or markdown.`,
+Generate 2-3 clear examples and as many varied test cases as possible, including edge cases. Do not include solutions or markdown.`,
   });
 
   const raw = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
