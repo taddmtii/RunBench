@@ -71,7 +71,7 @@ export default function CreateProblemModal({ onClose }: { onClose: () => void })
       <form
         onSubmit={create}
         onMouseDown={(event) => event.stopPropagation()}
-        className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl"
+        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -110,10 +110,52 @@ export default function CreateProblemModal({ onClose }: { onClose: () => void })
         </div>
 
         {generated && (
-          <div className="mt-4 flex gap-2 text-xs text-muted-foreground">
-            <span className="rounded-full bg-muted px-2.5 py-1">{generated.difficulty}</span>
-            <span className="rounded-full bg-muted px-2.5 py-1">{generated.topic}</span>
-            <span className="rounded-full bg-muted px-2.5 py-1">{generated.testCases.length} test cases</span>
+          <div className="mt-6 space-y-6 border-t border-border pt-6 text-sm">
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-1">{generated.difficulty}</span>
+              <span className="rounded-full bg-muted px-2.5 py-1">{generated.topic}</span>
+              <span className="rounded-full bg-muted px-2.5 py-1">Time: {generated.recommendedTimeComplexity}</span>
+              <span className="rounded-full bg-muted px-2.5 py-1">Space: {generated.recommendedSpaceComplexity}</span>
+            </div>
+
+            <section>
+              <h3 className="mb-3 font-medium">Examples</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {generated.examples.map((example, index) => (
+                  <div key={index} className="rounded-lg bg-muted p-3">
+                    <p className="mb-2 font-medium">Example {index + 1}</p>
+                    <p><span className="text-muted-foreground">Input: </span>{example.input}</p>
+                    <p><span className="text-muted-foreground">Output: </span>{example.output}</p>
+                    {example.explanation && <p className="mt-1 text-muted-foreground">{example.explanation}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h3 className="mb-3 font-medium">Function: <code>{generated.functionName}</code></h3>
+              <div className="space-y-3">
+                {Object.entries(generated.functionStubs).map(([language, stub]) => (
+                  <div key={language}>
+                    <p className="mb-1 capitalize text-muted-foreground">{language}</p>
+                    <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs">{stub}</pre>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h3 className="mb-3 font-medium">Test cases ({generated.testCases.length})</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {generated.testCases.map((testCase, index) => (
+                  <div key={index} className="rounded-lg bg-muted p-3 font-mono text-xs">
+                    <p className="mb-2 font-sans font-medium">Case {index + 1}</p>
+                    <p><span className="text-muted-foreground">Input: </span>{JSON.stringify(testCase.input)}</p>
+                    <p><span className="text-muted-foreground">Expected: </span>{testCase.expectedOutput}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
         {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
@@ -125,7 +167,14 @@ export default function CreateProblemModal({ onClose }: { onClose: () => void })
               <Sparkles /> {loading ? "Generating…" : "Generate"}
             </Button>
           )}
-          {generated && <Button type="submit" className="cursor-pointer" disabled={loading}>{loading ? "Creating…" : "Create problem"}</Button>}
+          {generated && (
+            <>
+              <Button type="button" variant="outline" disabled={loading} onClick={generate}>
+                <Sparkles /> {loading ? "Regenerating…" : "Regenerate"}
+              </Button>
+              <Button type="submit" className="cursor-pointer" disabled={loading}>Create problem</Button>
+            </>
+          )}
         </div>
       </form>
     </div>
