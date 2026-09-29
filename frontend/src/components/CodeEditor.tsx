@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Editor } from "@monaco-editor/react"
 import { ChevronDown, Play, Check, X } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Button } from "./ui/button"
-import { Problem, TestCase } from "../../generated/prisma/client"
+import { Problem, Submission, TestCase } from "../../generated/prisma/client"
 import CodeAnalysis from "./CodeAnalysis"
 
 // Used for both run and submit. optional fields are populated by submit only.
@@ -27,7 +27,8 @@ interface RunResult {
     }[]
 }
 interface CodeEditorProps {
-    problem: Problem
+    problem: Problem & { testCases: TestCase[] }
+    onSubmission: (submission: Submission) => void
 }
 
 const LANGUAGES = [
@@ -37,18 +38,13 @@ const LANGUAGES = [
 ]
 
 
-export default function CodeEditor({ problem }: CodeEditorProps) {
+export default function CodeEditor({ problem, onSubmission }: CodeEditorProps) {
     const [language, setLanguage] = useState("python")
     const [code, setCode] = useState( (problem?.functionStubs as Record<string, string>)?.["python"] ?? "")
     const [showPanel, setShowPanel] = useState(false)
     const [tab, setTab] = useState<"results" | "analysis">("results")
     const [result, setResult] = useState<RunResult>()
     const [processing, setProcessing] = useState(false)
-
-    useEffect(() => {
-    const stub = (problem?.functionStubs as Record<string, string>)?.[language] ?? ""
-    setCode(stub)
-    }, [language, problem])
 
     const handleRunClick = async () => {
         try {
@@ -66,7 +62,7 @@ export default function CodeEditor({ problem }: CodeEditorProps) {
             setResult(data)
             setTab("results")
             setShowPanel(true)
-        } catch (e) {
+        } catch {
             console.error("Something went wrong with Run.")
             return
         } finally {
@@ -89,6 +85,14 @@ export default function CodeEditor({ problem }: CodeEditorProps) {
         setResult(data)
         setTab("results")
         setShowPanel(true)
+        if (data.totalCount > 0 && data.passedCount === data.totalCount) {
+            const saved = await fetch("/api/submissions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ problemId: problem.id, rawCode: code, language, accepted: true }),
+            })
+            if (saved.ok) onSubmission(await saved.json())
+        }
     }
 
     return (
@@ -111,7 +115,10 @@ export default function CodeEditor({ problem }: CodeEditorProps) {
                         <DropdownMenuContent align="start">
                             <DropdownMenuGroup>
                                 {LANGUAGES.map((lang) => (
-                                    <DropdownMenuItem key={lang.value} onClick={() => setLanguage(lang.value)}>
+                                    <DropdownMenuItem key={lang.value} onClick={() => {
+                                        setLanguage(lang.value)
+                                        setCode((problem.functionStubs as Record<string, string>)?.[lang.value] ?? "")
+                                    }}>
                                         {lang.label}
                                     </DropdownMenuItem>
                                 ))}
