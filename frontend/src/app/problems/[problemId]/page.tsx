@@ -174,11 +174,12 @@ export default function Problem() {
         <div className="space-y-3">
           {submissions.map((submission) => (
             <div key={submission.id} className="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-800">
-              <div className="flex items-center justify-between">
-                <span className="capitalize">{submission.language}</span>
+              <div className="flex items-center gap-2">
                 <Check className="size-4 text-green-500" />
+                <span>Accepted </span>
+                <span className="capitalize">[{submission.language}]</span>
               </div>
-              <pre className="mt-2 max-h-24 overflow-hidden whitespace-pre-wrap text-xs text-muted-foreground">{submission.rawCode}</pre>
+              <p className="mt-1 text-xs text-muted-foreground">{new Date(submission.createdAt).toLocaleString()}</p>
             </div>
           ))}
           {!submissions.length && <p className="text-sm text-muted-foreground">No accepted submissions yet.</p>}
