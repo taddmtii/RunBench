@@ -1,16 +1,22 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react"
-import type { Problem } from "../../../../generated/prisma/client";
+import { Check } from "lucide-react";
+import type { Problem, ProblemExample, Submission, TestCase } from "../../../../generated/prisma/client";
 import CodeEditor from "@/components/CodeEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 
+type ProblemWithDetails = Problem & {
+  examples: ProblemExample[];
+  testCases: TestCase[];
+};
+
 export default function Problem() {
-    const [problem, setProblem] = useState<Problem | null>(null);
+    const [problem, setProblem] = useState<ProblemWithDetails | null>(null);
+    const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
-    const router = useParams();
-    const { problemId } = router;
+    const { problemId } = useParams();
 
     const difficultyStyles: Record<string, string> = {
         EASY: "bg-green-100 text-green-700",
@@ -20,6 +26,20 @@ export default function Problem() {
 
 
     useEffect(() => {
+
+      const fetchSubmissions = async () => {
+        try {
+            const res = await fetch(`/api/submissions?problemId=${problemId}`)
+            if (!res.ok) {
+                console.error("Could not retrieve submissions")
+                return
+            }
+            const data = await res.json()
+            setSubmissions(data)
+        } catch {
+            console.error("Could not retrieve submissions")
+        }
+      }
         const fetchProblem = async () => {
         try {
             const res = await fetch(`/api/problems/${problemId}`)
@@ -30,7 +50,7 @@ export default function Problem() {
         }
             const data = await res.json()
             setProblem(data)
-        } catch (e) {
+        } catch {
             console.error("Could not retrieve problem")
         } finally {
             setLoading(false)
@@ -39,12 +59,12 @@ export default function Problem() {
 
         if (problemId) {
             fetchProblem()
+            fetchSubmissions()
         }
-       
     }, [problemId])
       return (
-    <div className="flex h-screen gap-4 p-4">
-      <div className="w-1/2 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+    <div className="grid h-screen gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(280px,1fr)_minmax(420px,1.5fr)_minmax(240px,.7fr)] lg:overflow-hidden">
+      <div className="overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800 p-6">
         {loading ? (
           <div className="space-y-6">
             {/* Title and difficulty */}
@@ -145,8 +165,24 @@ export default function Problem() {
       </div>
 
       {/* Editor */}
-      <div className="w-1/2 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
-        <CodeEditor problem={problem} />
+      <div className="min-h-[520px] overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+        {problem && <CodeEditor problem={problem} onSubmission={(submission) => setSubmissions((current) => [submission, ...current])} />}
+      </div>
+
+      <div className="overflow-y-auto rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+        <h2 className="mb-4 font-semibold">Accepted submissions</h2>
+        <div className="space-y-3">
+          {submissions.map((submission) => (
+            <div key={submission.id} className="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <span className="capitalize">{submission.language}</span>
+                <Check className="size-4 text-green-500" />
+              </div>
+              <pre className="mt-2 max-h-24 overflow-hidden whitespace-pre-wrap text-xs text-muted-foreground">{submission.rawCode}</pre>
+            </div>
+          ))}
+          {!submissions.length && <p className="text-sm text-muted-foreground">No accepted submissions yet.</p>}
+        </div>
       </div>
     </div>
   );
