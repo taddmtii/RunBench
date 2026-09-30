@@ -6,6 +6,7 @@ import { ArrowLeft, Check } from "lucide-react";
 import type { Problem, ProblemExample, Submission, TestCase } from "../../../../generated/prisma/client";
 import CodeEditor from "@/components/CodeEditor";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 type ProblemWithDetails = Problem & {
   examples: ProblemExample[];
@@ -16,6 +17,7 @@ export default function Problem() {
     const [problem, setProblem] = useState<ProblemWithDetails | null>(null);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+    const [notes, setNotes] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const { problemId } = useParams();
 
@@ -25,6 +27,27 @@ export default function Problem() {
         HARD: "bg-red-100 text-red-700",
     };
 
+    async function onNotesSave() {
+      if (!selectedSubmission) return
+      try {
+        const res = await fetch("/api/submissions", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ submissionId: selectedSubmission.id, notes }),
+        })
+        if (!res.ok) {
+          console.error("Error saving notes to submission.")
+          return
+        }
+        const data = await res.json()
+        setSelectedSubmission(data)
+        setSubmissions((current) => current.map((submission) => submission.id === data.id ? data : submission))
+      }
+      catch {
+        console.error("Error saving notes to submission.")
+        return
+      }
+    }
 
     useEffect(() => {
 
@@ -170,6 +193,7 @@ export default function Problem() {
         {problem && <CodeEditor problem={problem} onSubmission={(submission) => setSubmissions((current) => [submission, ...current])} />}
       </div>
 
+      {/* Submissions Panel */}
       <div className="overflow-y-auto rounded-lg border border-gray-200 p-4 dark:border-gray-800">
         {selectedSubmission ? (
           <div className="space-y-5">
@@ -182,15 +206,21 @@ export default function Problem() {
             </div>
             <label className="block text-sm font-medium">
               Notes
-              <textarea defaultValue={selectedSubmission.notes ?? ""} rows={6} className="mt-2 w-full resize-none rounded-lg border border-border bg-background p-3 font-normal outline-none" />
+              <textarea value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={6} className="mt-2 w-full resize-none rounded-lg border border-border bg-background p-3 font-normal outline-none" />
             </label>
+            <Button variant="outline" onClick={onNotesSave}>
+              Save
+            </Button>
           </div>
         ) : (
           <>
             <h2 className="mb-4 font-semibold">Accepted submissions</h2>
             <div className="space-y-3">
               {submissions.map((submission) => (
-                <button key={submission.id} onClick={() => setSelectedSubmission(submission)} className="w-full cursor-pointer rounded-lg border border-gray-200 p-3 text-left text-sm hover:bg-muted dark:border-gray-800">
+                <button key={submission.id} onClick={() => {
+                  setSelectedSubmission(submission)
+                  setNotes(submission.notes ?? "")
+                }} className="w-full cursor-pointer rounded-lg border border-gray-200 p-3 text-left text-sm hover:bg-muted dark:border-gray-800">
                   <span className="flex items-center gap-2">
                     <Check className="size-4 text-green-500" /> Accepted <span className="capitalize">[{submission.language}]</span>
                   </span>
