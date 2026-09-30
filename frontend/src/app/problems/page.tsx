@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { useProblems } from "../hooks/useProblems";
-import Navbar from "@/components/Navbar";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import CreateProblemModal from "@/components/CreateProblemModal";
 
 export default function Problems() {
-  const { data } = useProblems();
+  const { data, isLoading } = useProblems();
   const [searchQuery, setSearchQuery] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -22,9 +22,8 @@ export default function Problems() {
   })
 
   return (
-    <div className="min-h-screen bg-background px-6 text-foreground sm:px-10">
+    <div className="min-h-full bg-background px-6 text-foreground sm:px-10">
       <div className="mx-auto max-w-5xl">
-        <Navbar />
         <section className="mt-16">
           <div className="flex items-center justify-between">
             <h1 className="text-4xl font-semibold">Problems</h1>
@@ -50,7 +49,13 @@ export default function Problems() {
             <span>Difficulty</span>
             <span>Topic</span>
           </div>
-          {filtered?.map((problem) => (
+          {isLoading ? Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="grid grid-cols-[1fr_120px_140px] items-center border-b border-border px-5 py-5">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          )) : filtered?.map((problem) => (
             <Link
               key={problem.id}
               href={`/problems/${problem.id}`}

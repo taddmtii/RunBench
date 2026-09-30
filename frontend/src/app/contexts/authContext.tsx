@@ -2,6 +2,7 @@
 
 import { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import { User } from "../../../generated/prisma/client"
+import { useRouter } from "next/navigation";
 
 interface AuthContextType {
     user: User | null;
@@ -13,6 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const router = useRouter()
     const [user, setUser] = useState<User | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
@@ -22,6 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         setUser(null)
         setIsLoading(false)
+        router.push("/")
+        router.refresh()
      }
 
     // validate user on mount

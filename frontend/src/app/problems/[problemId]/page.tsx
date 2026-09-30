@@ -87,7 +87,7 @@ export default function Problem() {
         }
     }, [problemId])
       return (
-    <div className="grid h-screen gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(280px,1fr)_minmax(420px,1.5fr)_minmax(240px,.7fr)] lg:overflow-hidden">
+    <div className="grid h-full gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(280px,1fr)_minmax(420px,1.5fr)_minmax(240px,.7fr)] lg:overflow-hidden">
       <div className="overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800 p-6">
         {loading ? (
           <div className="space-y-6">
