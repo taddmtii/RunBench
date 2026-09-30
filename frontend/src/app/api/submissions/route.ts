@@ -40,3 +40,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not save submission" }, { status: 400 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const accessToken = request.cookies.get("accessToken")?.value;
+    if (!accessToken) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { userId } = verifyAccessToken(accessToken);
+    const { submissionId, notes } = await request.json();
+    if (!submissionId || typeof notes !== "string") {
+      return NextResponse.json({ error: "Missing submission data" }, { status: 400 });
+    }
+
+    const submission = await prisma.submission.update({
+      where: { id: submissionId, userId },
+      data: { notes },
+    });
+    return NextResponse.json(submission);
+  } catch {
+    return NextResponse.json({ error: "Could not save notes" }, { status: 400 });
+  }
+}
