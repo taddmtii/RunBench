@@ -87,8 +87,8 @@ export default function Problem() {
         }
     }, [problemId])
       return (
-    <div className="grid h-full gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(280px,1fr)_minmax(420px,1.5fr)_minmax(240px,.7fr)] lg:overflow-hidden">
-      <div className="overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+    <div className="grid h-full grid-cols-1 gap-4 overflow-y-auto p-4 lg:grid-cols-4 lg:overflow-hidden">
+      <div className="min-h-0 overflow-y-auto rounded-lg border p-6">
         {loading ? (
           <div className="space-y-6">
             {/* Title and difficulty */}
@@ -110,7 +110,7 @@ export default function Problem() {
             {/* Examples. Maybe need to come back here and add a more dynamic array to map over for prioblems that have more than two exmaples */}
             <div className="mt-6 space-y-3">
               {[1,2].map((i) => (
-                <div key={i} className="rounded-md border border-gray-800 p-4 space-y-2">
+                <div key={i} className="space-y-2 rounded-md border p-4">
                   <Skeleton className="h-4 w-20" />
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-full" />
@@ -119,7 +119,7 @@ export default function Problem() {
             </div>
 
             {/* Time / Space Complexity */}
-            <div className="mt-8 grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+            <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-4">
               <div className="space-y-2">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-4 w-20" />
@@ -137,7 +137,7 @@ export default function Problem() {
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   difficultyStyles[String(problem?.difficulty).toUpperCase()] ??
-                  "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  "bg-muted text-muted-foreground"
                 }`}
               >
                 {problem?.difficulty}
@@ -153,20 +153,19 @@ export default function Problem() {
             {problem?.examples && (
                 <div className="mt-6 space-y-4">
                     {problem.examples.map((example, i) => (
-                    <div key={example.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-4 text-sm">
+                    <div key={example.id} className="rounded-md border p-4 text-sm">
                         <p className="mb-2 font-medium">Example {i + 1}</p>
                         <p className="font-mono">
-                        <span className="text-gray-500 dark:text-gray-400">Input: </span>
+                        <span className="text-muted-foreground">Input: </span>
                         {example.input}
                         </p>
                         <p className="font-mono">
-                        <span className="text-gray-500 dark:text-gray-400">Output: </span>
+                        <span className="text-muted-foreground">Output: </span>
                         {example.output}
                         </p>
                         {example.explanation && (
-                        <p className="mt-1 text-gray-600 dark:text-gray-400">
-                            <span className="text-gray-500 dark:text-gray-400">Explanation: </span>
-                            {example.explanation}
+                        <p className="mt-1 text-muted-foreground">
+                            Explanation: {example.explanation}
                         </p>
                         )}
                     </div>
@@ -174,7 +173,7 @@ export default function Problem() {
                 </div>
             )}
 
-            <div className="mt-8 grid grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-800 pt-4 text-sm">
+            <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-4 text-sm">
               <div>
                 <span className="block">Reccomended Time complexity</span>
                 <code className="font-mono">{problem?.recommendedTimeComplexity}</code>
@@ -189,12 +188,12 @@ export default function Problem() {
       </div>
 
       {/* Editor */}
-      <div className="min-h-[520px] overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+      <div className="min-h-96 overflow-hidden rounded-lg border lg:col-span-2 lg:min-h-0">
         {problem && <CodeEditor problem={problem} onSubmission={(submission) => setSubmissions((current) => [submission, ...current])} />}
       </div>
 
       {/* Submissions Panel */}
-      <div className="overflow-y-auto rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+      <div className="min-h-0 overflow-y-auto rounded-lg border p-4">
         {selectedSubmission ? (
           <div className="space-y-5">
             <button onClick={() => setSelectedSubmission(null)} className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
@@ -206,7 +205,7 @@ export default function Problem() {
             </div>
             <label className="block text-sm font-medium">
               Notes
-              <textarea value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={6} className="mt-2 w-full resize-none rounded-lg border border-border bg-background p-3 font-normal outline-none" />
+              <textarea value={notes ?? ""} onChange={(e) => setNotes(e.target.value)} rows={6} className="mt-2 w-full resize-none rounded-lg border bg-background p-3 font-normal outline-none" />
             </label>
             <Button variant="outline" onClick={onNotesSave}>
               Save
@@ -220,7 +219,7 @@ export default function Problem() {
                 <button key={submission.id} onClick={() => {
                   setSelectedSubmission(submission)
                   setNotes(submission.notes ?? "")
-                }} className="w-full cursor-pointer rounded-lg border border-gray-200 p-3 text-left text-sm hover:bg-muted dark:border-gray-800">
+                }} className="w-full cursor-pointer rounded-lg border p-3 text-left text-sm hover:bg-muted">
                   <span className="flex items-center gap-2">
                     <Check className="size-4 text-green-500" /> Accepted <span className="capitalize">[{submission.language}]</span>
                   </span>
