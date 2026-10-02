@@ -23,6 +23,8 @@ A personal coding practice platform for solving algorithm problems in the browse
 | Backend | Go |
 | Containerization | Docker |
 
+## Problems Page (BETA)
+
 <img width="3024" height="1654" alt="image" src="https://github.com/user-attachments/assets/0781d6d1-cb9a-40c4-8005-9c74179c2701" />
 
 
