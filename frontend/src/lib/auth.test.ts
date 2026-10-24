@@ -2,13 +2,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextResponse } from "next/server";
 import type { User } from "../../generated/prisma/client";
-
-// auth.ts reads the secrets at import time, so they must exist before the import below runs.
-vi.hoisted(() => {
-  process.env.JWT_ACCESS_SECRET = "test-access-secret";
-  process.env.JWT_REFRESH_SECRET = "test-refresh-secret";
-});
-
 import {
   attachAuthCookies,
   generateAccessToken,
