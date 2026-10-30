@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkSyntax, parseErrorResponse } from "@/lib/checkSyntax";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { code, language } = body;
+  const { code, language } = await request.json();
   if (!code) {
     return NextResponse.json(
       { message: "There was a problem with the request" },
       { status: 400 },
     );
   }
-  // Send code to Go service. This only needs to execute code in the sandboxed execution environment and not
-  // run any test cases. This route just acts as a proxy to send traffic to the microservice.
+
+  const syntaxError = checkSyntax(code, language);
+  if (syntaxError) {
+    return NextResponse.json(parseErrorResponse(syntaxError));
+  }
+
   const res = await fetch("http://localhost:8080/run", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ code: code, language: language }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, language }),
   });
-  const data = await res.json();
-  return NextResponse.json(data);
+  return NextResponse.json(await res.json());
 }

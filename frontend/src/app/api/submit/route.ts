@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkSyntax, parseErrorResponse } from "@/lib/checkSyntax";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -9,6 +10,11 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  const syntaxError = checkSyntax(code, language);
+  if (syntaxError) {
+    return NextResponse.json(parseErrorResponse(syntaxError));
+  }
+
   // Send code to Go service. This should execute code in the sandboxed execution environment and
   // run any associated test cases
   const res = await fetch("http://localhost:8080/submit", {
