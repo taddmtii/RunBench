@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link";
-import { ArrowRight, Play, Shield, Zap, Target, Layers } from "lucide-react";
+import { ArrowRight, Play, Shield, Zap, Target } from "lucide-react";
 import Card from "@/components/Card";
-import StepCard from "@/components/StepCard";
+
 import Navbar from "@/components/Navbar";
 
 export default function Home() {
@@ -18,9 +18,8 @@ export default function Home() {
           <span className="text-muted-foreground"> deliberate practice</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          RunBench is a coding practice platform powered by spaced repetition.
-          Solve problems, get AI-driven complexity analysis, and track progress
-          with intelligent scheduling.
+          RunBench is a coding practice platform for solving algorithm problems.
+          Write and run code, then get AI-driven complexity analysis of your solution.
         </p>
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
           <Link
@@ -49,11 +48,11 @@ export default function Home() {
             Everything you need to level up your problem solving game.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card
             icon={<Zap className="h-5 w-5" />}
-            title="Instant Execution"
-            description="Run your code in a sandboxed environment with CPU and memory limits."
+            title="Instant & Secure Execution"
+            description="Run your code in a sandboxed environment with CPU and memory limits, keeping your system safe."
           />
           <Card
             icon={<Target className="h-5 w-5" />}
@@ -61,40 +60,13 @@ export default function Home() {
             description="Get asynchronous time and space complexity analysis after every submission."
           />
           <Card
-            icon={<Layers className="h-5 w-5" />}
-            title="Spaced Repetition"
-            description="SM2-powered scheduling resurfaces problems at optimal retention intervals."
-          />
-          <Card
             icon={<Shield className="h-5 w-5" />}
-            title="Secure & Reliable"
-            description="Isolated execution with strict sandboxing keeps your system safe."
+            title="Review Your Work"
+            description="You can also review accepted submissions and save notes for later."
           />
         </div>
       </section>
 
-      <section className="container mx-auto px-6 pb-24">
-        <div className="mb-16 text-center">
-          <h2 className="text-2xl font-bold md:text-3xl">How it works</h2>
-        </div>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <StepCard
-            number="1"
-            title="Sign Up"
-            description="Create your account and choose your preferred language."
-          />
-          <StepCard
-            number="2"
-            title="Solve Problems"
-            description="Write and run code against test cases in the Monaco editor."
-          />
-          <StepCard
-            number="3"
-            title="Track Progress"
-            description="Review your submissions, notes, and spaced repetition schedule."
-          />
-        </div>
-      </section>
     </div>
   );
 }
