@@ -1,9 +1,5 @@
 # RunBench
 
-## References
-
-- Spaced repetition algorithm (SM2): https://github.com/thyagoluciano/sm2
-
 ## Tech Stack
 
 - **Frontend**: React, TypeScript, Next.js
@@ -17,7 +13,6 @@
 - Execute code in a sandboxed environment (Monaco Editor as the frontend component)
 - Analyze time complexity of submitted solutions
 - Capture time-to-solve and total problems solved, and persist both
-- Implement the SM2 algorithm for spaced repetition suggestions
 - Save user notes (tied to submissions)
 - Proper authentication using JWTs
 - Implement caching for relevant data (e.g. problems list)
@@ -28,12 +23,6 @@
 2. Server verifies credentials and issues a JWT
 3. Client stores the JWT and includes it on subsequent requests
 4. Server verifies the JWT on protected routes/API calls
-
-### SM2 Scheduling
-
-- Runs on every submission, recomputed only when a problem is solved
-- Each problem's review schedule is independent of others
-- `accepted` status on a `Submission` maps to an SM2 quality score, which drives updates to `easeFactor`, `interval`, and `repetitions`
 
 ### Time Complexity Analysis
 
@@ -147,26 +136,9 @@ _(predefined reference solutions, separate from user submissions)_
 | proposedOptimal        | boolean      | AI judgment                  |
 | proposedTimeComplexity | string       | AI judgment                  |
 | notes                  | string       | user's notes on this attempt |
-| accepted               | boolean      | drives SM2 + history stats   |
+| accepted               | boolean      | submission result            |
 | createdAt              | datetime     |                              |
 | updatedAt              | datetime     |                              |
-
-### ReviewSchedule
-
-_(SM2 state — one row per user+problem)_
-
-| Field          | Type         | Notes                                                                                 |
-| -------------- | ------------ | ------------------------------------------------------------------------------------- |
-| id (PK)        |              |                                                                                       |
-| userId         | FK → User    |                                                                                       |
-| problemId      | FK → Problem |                                                                                       |
-| easeFactor     | float        | how easy this item is for the user; starts at 2.5; rises on success, falls on failure |
-| interval       | int          | days to wait before showing this problem again                                        |
-| repetitions    | int          | consecutive successful recalls; resets to 0 on failure                                |
-| nextReviewAt   | datetime     |                                                                                       |
-| lastReviewedAt | datetime     |                                                                                       |
-| createdAt      | datetime     |                                                                                       |
-| updatedAt      | datetime     |                                                                                       |
 
 ### TestCase
 

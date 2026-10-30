@@ -23,7 +23,7 @@ export default function Problems() {
 
   return (
     <div className="min-h-full bg-background px-6 text-foreground sm:px-10">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <section className="mt-16">
           <h1 className="text-4xl font-semibold">Problems</h1>
           <div className="mt-8 flex max-w-md items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
@@ -39,28 +39,28 @@ export default function Problems() {
         </section>
 
         <section className="mt-10 overflow-hidden rounded-2xl border border-border bg-card">
-          <div className="grid grid-cols-[1fr_120px_140px] border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-[1fr_120px_140px] border-b border-border px-6 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <span>Problem</span>
             <span>Difficulty</span>
             <span>Topic</span>
           </div>
           {isLoading ? Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="grid grid-cols-[1fr_120px_140px] items-center border-b border-border px-5 py-5">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-24" />
+            <div key={index} className="grid grid-cols-[1fr_120px_140px] items-center border-b border-border px-6 py-6">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-5 w-24" />
             </div>
           )) : filtered?.map((problem) => (
             <Link
               key={problem.id}
               href={`/problems/${problem.id}`}
-              className="grid grid-cols-[1fr_120px_140px] items-center border-b border-border px-5 py-5 transition hover:bg-muted"
+              className="grid grid-cols-[1fr_120px_140px] items-center border-b border-border px-6 py-6 transition hover:bg-muted"
             >
-              <span className="text-sm font-medium">{problem.title}</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-base font-medium">{problem.title}</span>
+              <span className="text-base text-muted-foreground">
                 {problem.difficulty.charAt(0) + problem.difficulty.slice(1).toLowerCase()}
               </span>
-              <span className="text-sm text-muted-foreground">{problem.topic}</span>
+              <span className="text-base text-muted-foreground">{problem.topic}</span>
             </Link>
           ))}
         </section>
