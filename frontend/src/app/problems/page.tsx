@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useProblems } from "../hooks/useProblems";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+
 import { Skeleton } from "@/components/ui/skeleton";
-import CreateProblemModal from "@/components/CreateProblemModal";
+
 
 export default function Problems() {
   const { data, isLoading } = useProblems();
   const [searchQuery, setSearchQuery] = useState("");
-  const [creating, setCreating] = useState(false);
+
 
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSearchQuery(e.target.value)
@@ -25,12 +25,7 @@ export default function Problems() {
     <div className="min-h-full bg-background px-6 text-foreground sm:px-10">
       <div className="mx-auto max-w-5xl">
         <section className="mt-16">
-          <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-semibold">Problems</h1>
-            <Button size="lg" className="cursor-pointer" onClick={() => setCreating(true)}>
-              <Plus /> Create
-            </Button>
-          </div>
+          <h1 className="text-4xl font-semibold">Problems</h1>
           <div className="mt-8 flex max-w-md items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
             <Search size={17} className="text-muted-foreground" />
             <input
@@ -70,7 +65,7 @@ export default function Problems() {
           ))}
         </section>
       </div>
-      {creating && <CreateProblemModal onClose={() => setCreating(false)} />}
+
     </div>
   );
 }

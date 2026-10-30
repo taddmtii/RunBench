@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 export default function Home() {
   return (
     <div className="flex flex-col min-h-full">
-      <header className="px-6 sm:px-10">
+      <header className="border-b border-zinc-800 bg-[#1e1e1e] px-6 sm:px-10">
         <Navbar />
       </header>
       <section className="container mx-auto flex flex-col items-center px-6 pt-16 pb-20 text-center md:pt-24 md:pb-28">
