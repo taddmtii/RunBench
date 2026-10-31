@@ -86,9 +86,9 @@ export default function CodeEditor({ problem, onSubmission }: CodeEditorProps) {
     }
 
     return (
-        <div className="flex h-full min-h-[480px] flex-col gap-3 p-4">
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-[#1e1e1e]">
-                <div className="flex items-center justify-between border-b border-zinc-800 px-3 py-2">
+        <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-[#1e1e1e]">
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-800 px-3 py-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger
                             render={
@@ -139,7 +139,8 @@ export default function CodeEditor({ problem, onSubmission }: CodeEditorProps) {
                     </div>
                 </div>
 
-                <div className="min-h-0 flex-1">
+                <div className="relative min-h-0 min-w-0 flex-1">
+                                    <div className="absolute inset-0">
                     <Editor
                         height="100%"
                         value={code}
@@ -161,6 +162,7 @@ export default function CodeEditor({ problem, onSubmission }: CodeEditorProps) {
                             smoothScrolling: true,
                         }}
                     />
+                    </div>
                 </div>
             </div>
 

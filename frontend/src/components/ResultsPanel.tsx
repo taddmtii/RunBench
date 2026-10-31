@@ -35,8 +35,8 @@ interface ResultsPanelProps {
 
 export default function ResultsPanel({ code, result, tab, onTabChange, onClose }: ResultsPanelProps) {
     return (
-        <div className="flex h-100 shrink-0 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-[#1e1e1e]">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-2">
+        <div className="flex h-100 max-h-[50%] min-h-0 shrink-0 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-[#1e1e1e]">
+            <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-2">
                 <div className="flex">
                     <button
                         onClick={() => onTabChange("results")}

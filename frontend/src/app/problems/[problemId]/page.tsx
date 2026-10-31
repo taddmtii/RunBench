@@ -87,8 +87,8 @@ export default function Problem() {
         }
     }, [problemId])
       return (
-    <div className="grid h-full grid-cols-1 gap-4 overflow-y-auto p-4 lg:grid-cols-4 lg:overflow-hidden">
-      <div className="min-h-0 overflow-y-auto rounded-lg border p-6">
+    <div className="grid h-full grid-cols-1 gap-4 overflow-y-auto p-4 lg:grid-cols-4 lg:grid-rows-1 lg:overflow-hidden">
+      <div className="min-h-0 overflow-y-auto rounded-lg border bg-[#1e1e1e] p-6">
         {loading ? (
           <div className="space-y-6">
             {/* Title and difficulty */}
@@ -119,14 +119,15 @@ export default function Problem() {
             </div>
 
             {/* Time / Space Complexity */}
-            <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-20" />
+            <div className="mt-6 space-y-3 border-t pt-5">
+              <Skeleton className="h-4 w-40" />
+              <div className="flex items-center justify-between gap-4">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-7 w-20 rounded-md" />
               </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-20" />
+              <div className="flex items-center justify-between gap-4">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-7 w-20 rounded-md" />
               </div>
             </div>
           </div>
@@ -153,7 +154,7 @@ export default function Problem() {
             {problem?.examples && (
                 <div className="mt-6 space-y-4">
                     {problem.examples.map((example, i) => (
-                    <div key={example.id} className="rounded-md border p-4 text-sm">
+                    <div key={example.id} className="rounded-md border bg-[#242424] p-4 text-sm">
                         <p className="mb-2 font-medium">Example {i + 1}</p>
                         <p className="font-mono">
                         <span className="text-muted-foreground">Input: </span>
@@ -173,14 +174,21 @@ export default function Problem() {
                 </div>
             )}
 
-            <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-4 text-sm">
-              <div>
-                <span className="block">Reccomended Time complexity</span>
-                <code className="font-mono">{problem?.recommendedTimeComplexity}</code>
-              </div>
-              <div>
-                <span className="block">Reccomended Space complexity</span>
-                <code className="font-mono">{problem?.recommendedSpaceComplexity}</code>
+            <div className="mt-6 border-t pt-5 text-sm">
+              <p className="mb-3 font-medium">Recommended complexity</p>
+              <div className="w-fit max-w-full space-y-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="w-12 text-muted-foreground">Time</span>
+                  <span className="min-w-0 max-w-full wrap-break-word rounded-md bg-[#242424] px-2.5 py-1 font-mono text-xs">
+                    {problem?.recommendedTimeComplexity || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="w-12 text-muted-foreground">Space</span>
+                  <span className="min-w-0 max-w-full wrap-break-word rounded-md bg-[#242424] px-2.5 py-1 font-mono text-xs">
+                    {problem?.recommendedSpaceComplexity || "Not specified"}
+                  </span>
+                </div>
               </div>
             </div>
           </>
@@ -188,12 +196,12 @@ export default function Problem() {
       </div>
 
       {/* Editor */}
-      <div className="min-h-96 overflow-hidden rounded-lg border lg:col-span-2 lg:min-h-0">
+      <div className="h-[70dvh] min-h-96 min-w-0 overflow-hidden rounded-lg border lg:col-span-2 lg:h-full lg:min-h-0">
         {problem && <CodeEditor problem={problem} onSubmission={(submission) => setSubmissions((current) => [submission, ...current])} />}
       </div>
 
       {/* Submissions Panel */}
-      <div className="min-h-0 overflow-y-auto rounded-lg border p-4">
+      <div className="min-h-0 overflow-y-auto rounded-lg border bg-[#1e1e1e] p-4">
         {selectedSubmission ? (
           <div className="space-y-5">
             <button onClick={() => setSelectedSubmission(null)} className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
@@ -219,7 +227,7 @@ export default function Problem() {
                 <button key={submission.id} onClick={() => {
                   setSelectedSubmission(submission)
                   setNotes(submission.notes ?? "")
-                }} className="w-full cursor-pointer rounded-lg border p-3 text-left text-sm hover:bg-muted">
+                }} className="w-full cursor-pointer rounded-lg border bg-[#242424] p-3 text-left text-sm hover:bg-muted">
                   <span className="flex items-center gap-2">
                     <Check className="size-4 text-green-500" /> Accepted <span className="capitalize">[{submission.language}]</span>
                   </span>

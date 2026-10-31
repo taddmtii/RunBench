@@ -10,7 +10,7 @@ export default function Navbar() {
     const { user, logout, isLoading } = useAuth();
     return (
         <nav className="container mx-auto grid h-20 grid-cols-3 items-center">
-        <Link href="/" className="inline-flex h-full items-center font-bold text-xl lg:text-2xl">RunBench</Link>
+        <div className="inline-flex h-full items-center font-bold text-xl lg:text-2xl">RunBench</div>
 
         {!isLoading && user && (
           <div className="flex h-full items-center justify-self-center gap-4 text-sm text-muted-foreground lg:text-base">
