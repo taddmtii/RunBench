@@ -57,16 +57,7 @@ func NewHandler(svc *service.ExecutionService, maxConcurrent int) (*Handler, err
 	return &Handler{svc: svc, slots: make(chan struct{}, maxConcurrent)}, nil
 }
 
-func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
-	// Read JSON body
-	r.Body = http.MaxBytesReader(w, r.Body, 100<<10)
-	var req SubmitRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
+func (h *Handler) TakeSlot(w http.ResponseWriter) {
 	// Take a slot in channel or reject if all are in use / is full.
 	// select looks at channel operation and picks whichever one can happen now.
 	select {
@@ -79,6 +70,19 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Server busy, try again.", http.StatusTooManyRequests)
 		return
 	}
+}
+
+func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
+	// Read JSON body
+	r.Body = http.MaxBytesReader(w, r.Body, 100<<10)
+	var req SubmitRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	h.TakeSlot(w);
 
 	// Run the code and associated test cases.
 	res, err := h.svc.Submit(req.Code, req.Language, req.FunctionName, req.TestCases)
@@ -113,18 +117,7 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Take a slot in channel or reject if all are in use / is full.
-	// select looks at channel operation and picks whichever one can happen now.
-	select {
-	// send an empty struct into the channel to reserve a space.
-	case h.slots <- struct{}{}:
-		// Take one token out, defer schedudles it to run when Run finishes as cleanup.
-		defer func() { <-h.slots }()
-	// if full, say server is busy.
-	default:
-		http.Error(w, "Server busy, try again.", http.StatusTooManyRequests)
-		return
-	}
+	h.TakeSlot(w);
 
 	// Run the code
 	res, err := h.svc.Run(req.Code, req.Language)
