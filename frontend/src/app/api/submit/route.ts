@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkSyntax, parseErrorResponse } from "@/lib/checkSyntax";
+import { verifyAccessToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -10,6 +11,17 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  const isValid = verifyAccessToken(
+    request.cookies.get("accessToken")?.value || "",
+  );
+  if (!isValid) {
+    return NextResponse.json(
+      { message: "Access token is missing, invalid, or expired." },
+      { status: 401 },
+    );
+  }
+
   const syntaxError = checkSyntax(code, language);
   if (syntaxError) {
     return NextResponse.json(parseErrorResponse(syntaxError));

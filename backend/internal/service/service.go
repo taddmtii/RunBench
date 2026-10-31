@@ -62,8 +62,8 @@ func NewExecutionService() *ExecutionService {
 }
 
 // Creates temp sandbox directory containing code file to run.
-func (s *ExecutionService) CreateTempDirAndCodeFile(code string, langauge string) (string, string, error) {
-	extension := fileExtensions[langauge]
+func (s *ExecutionService) CreateTempDirAndCodeFile(code string, language string) (string, string, error) {
+	extension := fileExtensions[language]
 
 	// Create new folder in the OS temp location. * is replaced by a random number.
 	dir, err := os.MkdirTemp("", "sandbox-*")

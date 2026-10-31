@@ -34,7 +34,7 @@ export function attachAuthCookies(response: NextResponse, user: User) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 30, // 30 min in seconds
+    maxAge: 3600, // 60 min in seconds
     path: "/",
   });
 
