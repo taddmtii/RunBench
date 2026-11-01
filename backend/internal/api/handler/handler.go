@@ -58,14 +58,9 @@ func NewHandler(svc *service.ExecutionService, maxConcurrent int) (*Handler, err
 }
 
 func (h *Handler) TakeSlot(w http.ResponseWriter) {
-	// Take a slot in channel or reject if all are in use / is full.
-	// select looks at channel operation and picks whichever one can happen now.
 	select {
-	// send an empty struct into the channel to reserve a space.
 	case h.slots <- struct{}{}:
-		// Take one token out, defer schedudles it to run when Run finishes as cleanup.
 		defer func() { <-h.slots }()
-	// if full, say server is busy.
 	default:
 		http.Error(w, "Server busy, try again.", http.StatusTooManyRequests)
 		return
