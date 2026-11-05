@@ -57,16 +57,6 @@ func NewHandler(svc *service.ExecutionService, maxConcurrent int) (*Handler, err
 	return &Handler{svc: svc, slots: make(chan struct{}, maxConcurrent)}, nil
 }
 
-func (h *Handler) TakeSlot(w http.ResponseWriter) {
-	select {
-	case h.slots <- struct{}{}:
-		defer func() { <-h.slots }()
-	default:
-		http.Error(w, "Server busy, try again.", http.StatusTooManyRequests)
-		return
-	}
-}
-
 func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	// Read JSON body
 	r.Body = http.MaxBytesReader(w, r.Body, 100<<10)
@@ -77,7 +67,13 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.TakeSlot(w);
+	select {
+	case h.slots <- struct{}{}:
+		defer func() { <-h.slots }()
+	default:
+		http.Error(w, "Server busy, try again.", http.StatusTooManyRequests)
+		return
+	}
 
 	// Run the code and associated test cases.
 	res, err := h.svc.Submit(req.Code, req.Language, req.FunctionName, req.TestCases)
@@ -112,7 +108,13 @@ func (h *Handler) Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.TakeSlot(w);
+	select {
+	case h.slots <- struct{}{}:
+		defer func() { <-h.slots }()
+	default:
+		http.Error(w, "Server busy, try again.", http.StatusTooManyRequests)
+		return
+	}
 
 	// Run the code
 	res, err := h.svc.Run(req.Code, req.Language)
